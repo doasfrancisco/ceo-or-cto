@@ -34,22 +34,42 @@ function getMatchupsByPercentile(people: Person[]): Person[] {
     return ratioB - ratioA;
   });
 
-  // 5 percentiles para 5 matcheos
-  const percentiles = [0.2, 0.4, 0.6, 0.8, 1.0];
+  // 5 percentiles para 5 matcheos (definiendo rangos)
+  const percentileRanges = [
+    { start: 0.0, end: 0.2 },
+    { start: 0.2, end: 0.4 },
+    { start: 0.4, end: 0.6 },
+    { start: 0.6, end: 0.8 },
+    { start: 0.8, end: 1.0 },
+  ];
   const matchups: Person[] = [];
 
-  // Calcular el índice basado en el percentil
-  const getPersonAtPercentile = (sortedArray: Person[], percentile: number): Person => {
-    const index = Math.floor((sortedArray.length - 1) * (1 - percentile));
-    return sortedArray[Math.max(0, Math.min(index, sortedArray.length - 1))];
+  // Seleccionar aleatoriamente una persona dentro del rango del percentil
+  const getRandomPersonInPercentileRange = (
+    sortedArray: Person[],
+    startPercentile: number,
+    endPercentile: number
+  ): Person => {
+    const startIndex = Math.floor((sortedArray.length - 1) * (1 - endPercentile));
+    const endIndex = Math.floor((sortedArray.length - 1) * (1 - startPercentile));
+
+    // Asegurar que los índices estén dentro de los límites
+    const minIndex = Math.max(0, Math.min(startIndex, sortedArray.length - 1));
+    const maxIndex = Math.max(0, Math.min(endIndex, sortedArray.length - 1));
+
+    // Seleccionar aleatoriamente dentro del rango
+    const randomIndex = minIndex + Math.floor(Math.random() * (maxIndex - minIndex + 1));
+    return sortedArray[randomIndex];
   };
 
-  // Para cada percentil, seleccionar un CEO y un CTO
-  percentiles.forEach(percentile => {
-    const ceo = getPersonAtPercentile(sortedCEOs, percentile);
-    const cto = getPersonAtPercentile(sortedCTOs, percentile);
+  // Para cada rango de percentil, seleccionar aleatoriamente un CEO y un CTO
+  percentileRanges.forEach(range => {
+    const ceo = getRandomPersonInPercentileRange(sortedCEOs, range.start, range.end);
+    const cto = getRandomPersonInPercentileRange(sortedCTOs, range.start, range.end);
     matchups.push(applyEasterImage(ceo), applyEasterImage(cto));
   });
+
+  console.log(matchups);
 
   return matchups;
 }
