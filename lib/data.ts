@@ -8,7 +8,7 @@ export const people: Person[] = [
     company: "Maxilar",
     role: "CEO",
     type: "forced_to_socialize",
-    imageUrl: "/yo.jpeg",
+    imageUrl: "/ceos/yo.jpeg",
     location: "Peru",
   },
   {
@@ -17,7 +17,7 @@ export const people: Person[] = [
     company: "Maxilar",
     role: "CTO",
     type: "probably_uses_glasses",
-    imageUrl: "/mati.jpeg",
+    imageUrl: "/ctos/mati.jpeg",
     location: "Peru",
   },
   {
@@ -26,7 +26,7 @@ export const people: Person[] = [
     company: "Livo (Dead)",
     role: "CEO",
     type: "forced_to_socialize",
-    imageUrl: "/diego.jpeg",
+    imageUrl: "/ceos/diego.jpeg",
     location: "Peru",
   },
   {
@@ -35,9 +35,9 @@ export const people: Person[] = [
     company: "Livo (Dead)",
     role: "CTO",
     type: "probably_uses_glasses",
-    imageUrl: "/miguel_huaman.jpg",
+    imageUrl: "/ctos/miguel_huaman.jpg",
     location: "Peru",
-    easterImageUrl: "/baby_huaman.png"
+    easterImageUrl: "/ctos/baby_huaman.png"
   },
 ];
 
