@@ -1,12 +1,12 @@
 export interface Person {
   id: string;
   name: string;
-  company: string;
-  role: string;
-  type: "forced_to_socialize" | "probably_has_glasses";
+  company?: string;
+  role?: string;
+  type: "forced_to_socialize" | "probably_uses_glasses";
   imageUrl: string;
   location: string;
-  easterImageUrl?: string; // Optional: 1 in 3 chance to show this instead
+  easterImageUrl?: string;
 }
 
 export interface ComparisonPair {

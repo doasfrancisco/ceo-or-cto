@@ -16,7 +16,7 @@ export const people: Person[] = [
     name: "Matias Avendaño",
     company: "Maxilar",
     role: "CTO",
-    type: "probably_has_glasses",
+    type: "probably_uses_glasses",
     imageUrl: "/mati.jpeg",
     location: "Peru",
   },
@@ -34,7 +34,7 @@ export const people: Person[] = [
     name: "Miguel Huaman",
     company: "Livo (Dead)",
     role: "CTO",
-    type: "probably_has_glasses",
+    type: "probably_uses_glasses",
     imageUrl: "/miguel_huaman.jpg",
     location: "Peru",
     easterImageUrl: "/baby_huaman.png"

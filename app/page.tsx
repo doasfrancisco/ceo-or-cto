@@ -10,6 +10,8 @@ export default function Home() {
   const [category, setCategory] = useState("random");
 
   const abortControllerRef = useRef<AbortController | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const musicStartedRef = useRef(false);
 
   const isFirstVisit = () => {
     if (typeof window === "undefined") return true;
@@ -62,6 +64,15 @@ export default function Home() {
   }, []);
 
   const handleSelect = (personId: string) => {
+    // Start music on first click
+    if (!musicStartedRef.current && audioRef.current) {
+      audioRef.current.volume = 0.3;
+      audioRef.current.play().catch((error) => {
+        console.log("Failed to play audio:", error);
+      });
+      musicStartedRef.current = true;
+    }
+
     // TODO: Send selection to backend for ranking
     console.log("Selected person:", personId);
 
@@ -76,6 +87,16 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#fdfcfc] flex flex-col">
+      {/* Background Music */}
+      <audio
+        ref={audioRef}
+        src="/ceo-or-cto.mp3"
+        loop
+        autoPlay
+        preload="auto"
+        className="hidden"
+      />
+
       {/* Header */}
       <header className="bg-[#8c1d0a] text-white py-6 text-center">
         <h1 className="text-4xl md:text-5xl font-bold tracking-wider">CEO OR CTO</h1>
@@ -149,7 +170,7 @@ export default function Home() {
         </div>
 
         {/* Navigation Links */}
-        <nav className="mb-8">
+        {/* <nav className="mb-8">
           <ul className="flex flex-wrap justify-center gap-4 md:gap-6 text-[#4d9db5] font-bold">
             <li>
               <button
@@ -224,7 +245,7 @@ export default function Home() {
               </button>
             </li>
           </ul>
-        </nav>
+        </nav> */}
 
         {/* Footer Links */}
         <footer className="flex gap-6 text-black font-bold">
