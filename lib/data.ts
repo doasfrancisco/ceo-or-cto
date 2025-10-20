@@ -27,7 +27,7 @@ export const people: Person[] = [
     role: "CEO",
     type: "forced_to_socialize",
     imageUrl: "/diego.jpeg",
-    location: "Chile",
+    location: "Peru",
   },
   {
     id: "4",

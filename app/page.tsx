@@ -38,24 +38,17 @@ export default function Home() {
 
       const data: ComparisonPair = await response.json();
 
-      // Only update state if this request wasn't aborted
       if (!abortController.signal.aborted) {
-        console.log("Frontend received:", data.person1.name, "vs", data.person2.name);
-        console.log("Image URLs:", data.person1.imageUrl, "vs", data.person2.imageUrl);
         setComparison(data);
 
-        // Mark as visited after first fetch
         if (firstVisit) {
           localStorage.setItem("hasVisited", "true");
         }
       }
     } catch (error) {
-      // Ignore abort errors
       if (error instanceof Error && error.name === 'AbortError') {
-        console.log("Request aborted");
         return;
       }
-      console.error("Error fetching comparison:", error);
     } finally {
       // Only clear loading if this request wasn't aborted
       if (!abortController.signal.aborted) {
@@ -72,10 +65,7 @@ export default function Home() {
     // TODO: Send selection to backend for ranking
     console.log("Selected person:", personId);
 
-    // Clear current comparison to force loading state
     setComparison(null);
-
-    // Fetch next comparison
     fetchComparison();
   };
 
