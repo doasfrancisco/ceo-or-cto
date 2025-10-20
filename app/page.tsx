@@ -66,7 +66,7 @@ export default function Home() {
   const handleSelect = (personId: string) => {
     // Start music on first click
     if (!musicStartedRef.current && audioRef.current) {
-      audioRef.current.volume = 0.2;
+      audioRef.current.volume = 0;
       audioRef.current.play().catch((error) => {
         console.log("Failed to play audio:", error);
       });
