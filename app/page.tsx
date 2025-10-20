@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { ComparisonPair } from "@/lib/types";
 
@@ -9,50 +9,76 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState("random");
 
-  // Check if this is the first visit
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const isFirstVisit = () => {
     if (typeof window === "undefined") return true;
     const hasVisited = localStorage.getItem("hasVisited");
     return !hasVisited;
   };
 
-  // Fetch comparison pair from API
   const fetchComparison = async (cat: string = category) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
     setLoading(true);
     try {
       const firstVisit = isFirstVisit();
       const response = await fetch(
-        `/api/comparison?firstVisit=${firstVisit}&location=${cat}`
+        `/api/comparison?firstVisit=${firstVisit}&location=${cat}`,
+        {
+          cache: 'no-store',
+          signal: abortController.signal
+        }
       );
-      const data: ComparisonPair = await response.json();
-      setComparison(data);
 
-      // Mark as visited after first fetch
-      if (firstVisit) {
-        localStorage.setItem("hasVisited", "true");
+      const data: ComparisonPair = await response.json();
+
+      // Only update state if this request wasn't aborted
+      if (!abortController.signal.aborted) {
+        console.log("Frontend received:", data.person1.name, "vs", data.person2.name);
+        console.log("Image URLs:", data.person1.imageUrl, "vs", data.person2.imageUrl);
+        setComparison(data);
+
+        // Mark as visited after first fetch
+        if (firstVisit) {
+          localStorage.setItem("hasVisited", "true");
+        }
       }
     } catch (error) {
+      // Ignore abort errors
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log("Request aborted");
+        return;
+      }
       console.error("Error fetching comparison:", error);
     } finally {
-      setLoading(false);
+      // Only clear loading if this request wasn't aborted
+      if (!abortController.signal.aborted) {
+        setLoading(false);
+      }
     }
   };
 
-  // Initial load
   useEffect(() => {
     fetchComparison();
   }, []);
 
-  // Handle selection
   const handleSelect = (personId: string) => {
     // TODO: Send selection to backend for ranking
     console.log("Selected person:", personId);
+
+    // Clear current comparison to force loading state
+    setComparison(null);
 
     // Fetch next comparison
     fetchComparison();
   };
 
-  // Handle category change
   const handleCategoryChange = (newCategory: string) => {
     setCategory(newCategory);
     fetchComparison(newCategory);
@@ -100,6 +126,10 @@ export default function Home() {
                     fill
                     className="object-cover"
                   />
+                  <div className="absolute bottom-0 left-0 bg-black/50 text-white text-xs p-1">
+                    {comparison.person1.name}
+                    {comparison.person1.imageUrl}
+                  </div>
                 </div>
               </button>
 
@@ -118,6 +148,10 @@ export default function Home() {
                     fill
                     className="object-cover"
                   />
+                  <div className="absolute bottom-0 left-0 bg-black/50 text-white text-xs p-1">
+                    {comparison.person2.name}
+                    {comparison.person2.imageUrl}
+                  </div>
                 </div>
               </button>
             </>
