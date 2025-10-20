@@ -7,7 +7,7 @@ export interface Person {
   imageUrl: string;
   location: string;
   easterImageUrl?: string;
-  total_veces: BigInteger;
+  total: BigInteger;
   SR: BigInteger;
 }
 

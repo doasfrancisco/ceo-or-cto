@@ -13,7 +13,6 @@ function applyEasterImage(person: Person): Person {
 }
 
 function getMatchupsByPercentile(people: Person[]): Person[] {
-  // Separar por tipo
   const ceos = people.filter(p => p.type === "forced_to_socialize");
   const ctos = people.filter(p => p.type === "probably_uses_glasses");
 
@@ -24,14 +23,14 @@ function getMatchupsByPercentile(people: Person[]): Person[] {
 
   // Ordenar cada arreglo por SR/Total_veces (descendente - mayor rating primero)
   const sortedCEOs = [...ceos].sort((a, b) => {
-    const ratioA = Number(a.total_veces) > 0 ? Number(a.SR) / Number(a.total_veces) : 0;
-    const ratioB = Number(b.total_veces) > 0 ? Number(b.SR) / Number(b.total_veces) : 0;
+    const ratioA = Number(a.total) > 0 ? Number(a.SR) / Number(a.total) : 0;
+    const ratioB = Number(b.total) > 0 ? Number(b.SR) / Number(b.total) : 0;
     return ratioB - ratioA;
   });
 
   const sortedCTOs = [...ctos].sort((a, b) => {
-    const ratioA = Number(a.total_veces) > 0 ? Number(a.SR) / Number(a.total_veces) : 0;
-    const ratioB = Number(b.total_veces) > 0 ? Number(b.SR) / Number(b.total_veces) : 0;
+    const ratioA = Number(a.total) > 0 ? Number(a.SR) / Number(a.total) : 0;
+    const ratioB = Number(b.total) > 0 ? Number(b.SR) / Number(b.total) : 0;
     return ratioB - ratioA;
   });
 
@@ -97,7 +96,6 @@ export async function GET(request: NextRequest) {
         );
       }
     } else {
-      // Fetch people from CosmosDB
       let people: Person[];
       if (location && location !== "random") {
         people = await getPeopleByLocation(location);
@@ -105,17 +103,8 @@ export async function GET(request: NextRequest) {
         people = await getAllPeople();
       }
 
-      if (people.length < 10) {
-        return NextResponse.json(
-          { error: "Not enough people in database for matchups" },
-          { status: 500 }
-        );
-      }
-
-      // Obtener 10 personas (5 matcheos) organizados por percentiles
       matchups = getMatchupsByPercentile(people);
 
-      // person1 y person2 son los primeros del matchup para compatibilidad
       person1 = matchups[0];
       person2 = matchups[1];
     }

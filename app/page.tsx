@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
-import { ComparisonPair } from "@/lib/types";
+import { ComparisonPair, Person } from "@/lib/types";
 import { analytics } from "@/lib/mixpanel";
 
 export default function Home() {
@@ -14,13 +14,17 @@ export default function Home() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const musicStartedRef = useRef(false);
 
+  // Cache matchups and track current pair index
+  const matchupsRef = useRef<Person[] | null>(null);
+  const currentPairIndexRef = useRef<number>(0);
+
   const isFirstVisit = () => {
     if (typeof window === "undefined") return true;
     const hasVisited = localStorage.getItem("hasVisited");
     return !hasVisited;
   };
 
-  const fetchComparison = async (cat: string = category) => {
+  const fetchNewMatchups = async (cat: string = category) => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -42,6 +46,12 @@ export default function Home() {
       const data: ComparisonPair = await response.json();
 
       if (!abortController.signal.aborted) {
+        // Cache the matchups and increment index since we're showing the first pair
+        if (data.matchups) {
+          matchupsRef.current = data.matchups;
+          currentPairIndexRef.current = 1; // Start at 1 since we're already showing pair 0
+        }
+
         setComparison(data);
 
         if (firstVisit) {
@@ -73,8 +83,47 @@ export default function Home() {
     }
   };
 
+  const showNextPair = () => {
+    // Check if we have cached matchups
+    if (!matchupsRef.current || currentPairIndexRef.current >= 5) {
+      // Need to fetch new matchups
+      fetchNewMatchups();
+      return;
+    }
+
+    // Get the next pair from cached matchups
+    const pairIndex = currentPairIndexRef.current;
+    const person1 = matchupsRef.current[pairIndex * 2];
+    const person2 = matchupsRef.current[pairIndex * 2 + 1];
+
+    // Increment for next time
+    currentPairIndexRef.current += 1;
+
+    // Create comparison object
+    const newComparison: ComparisonPair = {
+      person1,
+      person2,
+      isFirstVisit: false,
+      matchups: matchupsRef.current,
+    };
+
+    setComparison(newComparison);
+
+    // Track comparison view
+    analytics.trackComparisonView({
+      person1Id: person1.id,
+      person1Name: person1.name,
+      person1Role: person1.role || '',
+      person2Id: person2.id,
+      person2Name: person2.name,
+      person2Role: person2.role || '',
+      category,
+      isFirstVisit: false,
+    });
+  };
+
   useEffect(() => {
-    fetchComparison();
+    fetchNewMatchups();
   }, []);
 
   const handleSelect = (personId: string) => {
@@ -104,13 +153,17 @@ export default function Home() {
     }
 
     setComparison(null);
-    fetchComparison();
+    // Show next pair from cache or fetch new matchups
+    showNextPair();
   };
 
   const handleCategoryChange = (newCategory: string) => {
     setCategory(newCategory);
     analytics.trackCategoryChange(newCategory);
-    fetchComparison(newCategory);
+    // Reset cache when category changes
+    matchupsRef.current = null;
+    currentPairIndexRef.current = 0;
+    fetchNewMatchups(newCategory);
   };
 
   return (
