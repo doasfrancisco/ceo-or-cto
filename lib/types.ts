@@ -7,10 +7,13 @@ export interface Person {
   imageUrl: string;
   location: string;
   easterImageUrl?: string;
+  total_veces: BigInteger;
+  SR: BigInteger;
 }
 
 export interface ComparisonPair {
   person1: Person;
   person2: Person;
   isFirstVisit: boolean;
+  matchups?: Person[]; // Array de 10 personas (5 matcheos por percentil)
 }
