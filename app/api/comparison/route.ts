@@ -12,19 +12,47 @@ function applyEasterImage(person: Person): Person {
   return person;
 }
 
-function getRandomPeople(people: Person[]): [Person, Person] {
+function getMatchupsByPercentile(people: Person[]): Person[] {
+  // Separar por tipo
   const ceos = people.filter(p => p.type === "forced_to_socialize");
   const ctos = people.filter(p => p.type === "probably_uses_glasses");
 
   if (ceos.length === 0 || ctos.length === 0) {
     const shuffled = [...people].sort(() => Math.random() - 0.5);
-    return [applyEasterImage(shuffled[0]), applyEasterImage(shuffled[1])];
+    return shuffled.slice(0, 10).map(p => applyEasterImage(p));
   }
 
-  const randomCEO = ceos[Math.floor(Math.random() * ceos.length)];
-  const randomCTO = ctos[Math.floor(Math.random() * ctos.length)];
+  // Ordenar cada arreglo por SR/Total_veces (descendente - mayor rating primero)
+  const sortedCEOs = [...ceos].sort((a, b) => {
+    const ratioA = Number(a.total_veces) > 0 ? Number(a.SR) / Number(a.total_veces) : 0;
+    const ratioB = Number(b.total_veces) > 0 ? Number(b.SR) / Number(b.total_veces) : 0;
+    return ratioB - ratioA;
+  });
 
-  return [applyEasterImage(randomCEO), applyEasterImage(randomCTO)];
+  const sortedCTOs = [...ctos].sort((a, b) => {
+    const ratioA = Number(a.total_veces) > 0 ? Number(a.SR) / Number(a.total_veces) : 0;
+    const ratioB = Number(b.total_veces) > 0 ? Number(b.SR) / Number(b.total_veces) : 0;
+    return ratioB - ratioA;
+  });
+
+  // 5 percentiles para 5 matcheos
+  const percentiles = [0.2, 0.4, 0.6, 0.8, 1.0];
+  const matchups: Person[] = [];
+
+  // Calcular el índice basado en el percentil
+  const getPersonAtPercentile = (sortedArray: Person[], percentile: number): Person => {
+    const index = Math.floor((sortedArray.length - 1) * (1 - percentile));
+    return sortedArray[Math.max(0, Math.min(index, sortedArray.length - 1))];
+  };
+
+  // Para cada percentil, seleccionar un CEO y un CTO
+  percentiles.forEach(percentile => {
+    const ceo = getPersonAtPercentile(sortedCEOs, percentile);
+    const cto = getPersonAtPercentile(sortedCTOs, percentile);
+    matchups.push(applyEasterImage(ceo), applyEasterImage(cto));
+  });
+
+  return matchups;
 }
 
 export async function GET(request: NextRequest) {
@@ -54,6 +82,7 @@ export async function GET(request: NextRequest) {
     }
 
     let person1, person2;
+    let matchups: Person[] | undefined;
 
     if (isFirstVisit) {
       person1 = await getPersonById('yo');
@@ -76,20 +105,26 @@ export async function GET(request: NextRequest) {
         people = await getAllPeople();
       }
 
-      if (people.length < 2) {
+      if (people.length < 10) {
         return NextResponse.json(
-          { error: "Not enough people in database" },
+          { error: "Not enough people in database for matchups" },
           { status: 500 }
         );
       }
 
-      [person1, person2] = getRandomPeople(people);
+      // Obtener 10 personas (5 matcheos) organizados por percentiles
+      matchups = getMatchupsByPercentile(people);
+
+      // person1 y person2 son los primeros del matchup para compatibilidad
+      person1 = matchups[0];
+      person2 = matchups[1];
     }
 
     const response: ComparisonPair = {
       person1,
       person2,
       isFirstVisit,
+      matchups,
     };
 
     return NextResponse.json(response);
