@@ -1,4 +1,63 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { ComparisonPair } from "@/lib/types";
+
 export default function Home() {
+  const [comparison, setComparison] = useState<ComparisonPair | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [category, setCategory] = useState("random");
+
+  // Check if this is the first visit
+  const isFirstVisit = () => {
+    if (typeof window === "undefined") return true;
+    const hasVisited = localStorage.getItem("hasVisited");
+    return !hasVisited;
+  };
+
+  // Fetch comparison pair from API
+  const fetchComparison = async (cat: string = category) => {
+    setLoading(true);
+    try {
+      const firstVisit = isFirstVisit();
+      const response = await fetch(
+        `/api/comparison?firstVisit=${firstVisit}&location=${cat}`
+      );
+      const data: ComparisonPair = await response.json();
+      setComparison(data);
+
+      // Mark as visited after first fetch
+      if (firstVisit) {
+        localStorage.setItem("hasVisited", "true");
+      }
+    } catch (error) {
+      console.error("Error fetching comparison:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    fetchComparison();
+  }, []);
+
+  // Handle selection
+  const handleSelect = (personId: string) => {
+    // TODO: Send selection to backend for ranking
+    console.log("Selected person:", personId);
+
+    // Fetch next comparison
+    fetchComparison();
+  };
+
+  // Handle category change
+  const handleCategoryChange = (newCategory: string) => {
+    setCategory(newCategory);
+    fetchComparison(newCategory);
+  };
+
   return (
     <div className="min-h-screen bg-[#fdfcfc] flex flex-col">
       {/* Header */}
@@ -10,7 +69,7 @@ export default function Home() {
       <main className="flex-1 flex flex-col items-center px-4 py-5">
         {/* Tagline */}
         <div className="text-center mb-8">
-          <p className="text-lg md:text-2xl font-bold text-black mb-2">
+          <p className="text-lg md:text-2xl font-bold text-black mb-12">
             Were we CTO for our looks? No. Will we be judged on them? Yes.
           </p>
           <p className="text-xl md:text-4xl font-bold text-black mt-4">
@@ -20,36 +79,126 @@ export default function Home() {
 
         {/* Image Comparison Section */}
         <div className="flex items-center gap-3 md:gap-4 mb-12">
-          {/* Left Image */}
-          <button className="group cursor-pointer">
-            <div className="w-48 h-64 md:w-60 md:h-80 bg-[#8b9a8a] border-4 border-[#6b7a6a] hover:border-[#4b5a4a] transition-colors flex items-center justify-center">
-              <span className="text-white text-sm opacity-60">Click to Select</span>
-            </div>
-          </button>
+          {loading || !comparison ? (
+            <>
+              {/* Loading placeholders */}
+              <div className="w-48 h-64 md:w-60 md:h-80 bg-[#8c1d0a] border-4 animate-pulse" />
+              <div className="text-2xl md:text-3xl text-black">OR</div>
+              <div className="w-48 h-64 md:w-60 md:h-80 bg-[#8c1d0a] border-4 animate-pulse" />
+            </>
+          ) : (
+            <>
+              {/* Left Image */}
+              <button
+                className="group cursor-pointer"
+                onClick={() => handleSelect(comparison.person1.id)}
+              >
+                <div className="w-48 h-64 md:w-60 md:h-80 border-4 hover:border-[#8c1d0a] transition-colors overflow-hidden relative">
+                  <Image
+                    src={comparison.person1.imageUrl}
+                    alt={comparison.person1.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </button>
 
-          {/* OR Text */}
-          <div className="text-2xl md:text-3xl text-black">OR</div>
+              {/* OR Text */}
+              <div className="text-2xl md:text-3xl text-black">OR</div>
 
-          {/* Right Image */}
-          <button className="group cursor-pointer">
-            <div className="w-48 h-64 md:w-60 md:h-80 bg-[#8b9a8a] border-4 border-[#6b7a6a] hover:border-[#4b5a4a] transition-colors flex items-center justify-center">
-              <span className="text-white text-sm opacity-60">Click to Select</span>
-            </div>
-          </button>
+              {/* Right Image */}
+              <button
+                className="group cursor-pointer"
+                onClick={() => handleSelect(comparison.person2.id)}
+              >
+                <div className="w-48 h-64 md:w-60 md:h-80 border-4 hover:border-[#8c1d0a] transition-colors overflow-hidden relative">
+                  <Image
+                    src={comparison.person2.imageUrl}
+                    alt={comparison.person2.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </button>
+            </>
+          )}
         </div>
 
         {/* Navigation Links */}
         <nav className="mb-8">
           <ul className="flex flex-wrap justify-center gap-4 md:gap-6 text-[#4d9db5] font-bold">
-            <li><a href="#" className="hover:underline uppercase">Peru</a></li>
-            <li><a href="#" className="hover:underline uppercase">Mexico</a></li>
-            <li><a href="#" className="hover:underline uppercase">Brazil</a></li>
-            <li><a href="#" className="hover:underline uppercase">Chile</a></li>
-            <li><a href="#" className="hover:underline uppercase">Colombia</a></li>
-            <li><a href="#" className="hover:underline uppercase">Bolivia</a></li>
-            <li><a href="#" className="hover:underline uppercase">Ecuador</a></li>
-            <li><a href="#" className="hover:underline uppercase">Paraguay</a></li>
-            <li><a href="#" className="hover:underline uppercase">Random</a></li>
+            <li>
+              <button
+                onClick={() => handleCategoryChange("peru")}
+                className="hover:underline uppercase"
+              >
+                Peru
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => handleCategoryChange("mexico")}
+                className="hover:underline uppercase"
+              >
+                Mexico
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => handleCategoryChange("brazil")}
+                className="hover:underline uppercase"
+              >
+                Brazil
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => handleCategoryChange("chile")}
+                className="hover:underline uppercase"
+              >
+                Chile
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => handleCategoryChange("colombia")}
+                className="hover:underline uppercase"
+              >
+                Colombia
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => handleCategoryChange("bolivia")}
+                className="hover:underline uppercase"
+              >
+                Bolivia
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => handleCategoryChange("ecuador")}
+                className="hover:underline uppercase"
+              >
+                Ecuador
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => handleCategoryChange("paraguay")}
+                className="hover:underline uppercase"
+              >
+                Paraguay
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => handleCategoryChange("random")}
+                className="hover:underline uppercase"
+              >
+                Random
+              </button>
+            </li>
           </ul>
         </nav>
 
