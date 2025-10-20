@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "CEO or CTO",
-  description: "Who looks more like the CEO? Click to choose.",
+  description: "Who looks more like the CTO? Click to choose.",
 };
 
 export default function RootLayout({

@@ -28,7 +28,7 @@ export default function Home() {
           </button>
 
           {/* OR Text */}
-          <div className="text-2xl md:text-3xl font-bold text-black">OR</div>
+          <div className="text-2xl md:text-3xl text-black">OR</div>
 
           {/* Right Image */}
           <button className="group cursor-pointer">
