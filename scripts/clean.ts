@@ -71,19 +71,18 @@ function linkedInIdToName(linkedInId: string): string {
 }
 
 function cleanCSVAndConvertToJSON(type: string = 'ceo') {
+  const lowerType = type.toLowerCase();
+
   const csvPath = path.join(__dirname, `${type}_profiles.csv`);
   const outputPath = path.join(__dirname, `../lib/${type}_data.json`);
 
-  // Azure Blob Storage configuration
   const storageAccountName = process.env.AZURE_STORAGE_ACCOUNT_NAME || 'your-storage-account';
   const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME || 'profiles';
   const blobBaseUrl = `https://${storageAccountName}.blob.core.windows.net/${containerName}`;
 
-  // Read CSV file
   const csvContent = fs.readFileSync(csvPath, 'utf-8');
   const lines = csvContent.split('\n').filter(line => line.trim());
 
-  // Skip header
   const dataLines = lines.slice(1);
 
   const people: Person[] = dataLines.map((line, index) => {
@@ -100,8 +99,8 @@ function cleanCSVAndConvertToJSON(type: string = 'ceo') {
       id: linkedInId,
       name,
       company: company || '',
-      role: type.toLowerCase() === 'ceo' ? 'CEO' : 'CTO',
-      type: 'forced_to_socialize' as const,
+      role: lowerType === 'ceo' ? 'CEO' : 'CTO',
+      type:  lowerType === 'ceo' ? 'forced_to_socialize' : 'probably_uses_glasses',
       imageUrl: `${blobBaseUrl}/${type}s/${linkedInId}.jpg`,
       location: 'Peru',
     };
