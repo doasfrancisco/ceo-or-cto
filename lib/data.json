@@ -6,7 +6,9 @@
     "role": "CEO",
     "type": "forced_to_socialize",
     "imageUrl": "https://ceoorcto.blob.core.windows.net/ceoorcto/ceos/yo.jpeg",
-    "location": "Peru"
+    "location": "Peru",
+    "total": 1,
+    "sr": 1
   },
   {
     "id": "mati",
@@ -15,7 +17,9 @@
     "role": "CTO",
     "type": "probably_uses_glasses",
     "imageUrl": "https://ceoorcto.blob.core.windows.net/ceoorcto/ctos/mati.jpeg",
-    "location": "Peru"
+    "location": "Peru",
+    "total": 1,
+    "sr": 1
   },
   {
     "id": "diego",
@@ -24,7 +28,9 @@
     "role": "CEO",
     "type": "forced_to_socialize",
     "imageUrl": "https://ceoorcto.blob.core.windows.net/ceoorcto/ceos/diego.jpeg",
-    "location": "Peru"
+    "location": "Peru",
+    "total": 1,
+    "sr": 1
   },
   {
     "id": "miguel_huaman",
@@ -32,8 +38,10 @@
     "company": "Livo",
     "role": "CTO",
     "type": "probably_uses_glasses",
-    "imageUrl": "https://ceoorcto.blob.core.windows.net/ceoorcto/ctos/miguel_huaman.jpg",
     "location": "Peru",
+    "total": 1,
+    "sr": 1,
+    "imageUrl": "https://ceoorcto.blob.core.windows.net/ceoorcto/ctos/miguel_huaman.jpg",
     "easterImageUrl": "https://ceoorcto.blob.core.windows.net/ceoorcto/ctos/baby_huaman.png"
   }
 ]
