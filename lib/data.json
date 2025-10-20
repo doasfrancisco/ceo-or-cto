@@ -1,39 +1,39 @@
 [  
   {
-    "id": "1",
+    "id": "yo",
     "name": "Francisco Dominguez",
     "company": "Maxilar",
     "role": "CEO",
     "type": "forced_to_socialize",
-    "imageUrl": "/yo.jpeg",
+    "imageUrl": "https://ceoorcto.blob.core.windows.net/ceoorcto/ceos/yo.jpeg",
     "location": "Peru"
   },
   {
-    "id": "2",
+    "id": "mati",
     "name": "Matias Avendaño",
     "company": "Maxilar",
     "role": "CTO",
     "type": "probably_uses_glasses",
-    "imageUrl": "/mati.jpeg",
+    "imageUrl": "https://ceoorcto.blob.core.windows.net/ceoorcto/ctos/mati.jpeg",
     "location": "Peru"
   },
   {
-    "id": "3",
+    "id": "diego",
     "name": "Diego Salazar",
-    "company": "Livo (Dead)",
+    "company": "Livo",
     "role": "CEO",
     "type": "forced_to_socialize",
-    "imageUrl": "/diego.jpeg",
+    "imageUrl": "https://ceoorcto.blob.core.windows.net/ceoorcto/ceos/diego.jpeg",
     "location": "Peru"
   },
   {
-    "id": "4",
+    "id": "miguel_huaman",
     "name": "Miguel Huaman",
-    "company": "Livo (Dead)",
+    "company": "Livo",
     "role": "CTO",
     "type": "probably_uses_glasses",
-    "imageUrl": "/miguel_huaman.jpg",
+    "imageUrl": "https://ceoorcto.blob.core.windows.net/ceoorcto/ctos/miguel_huaman.jpg",
     "location": "Peru",
-    "easterImageUrl": "/baby_huaman.png"
+    "easterImageUrl": "https://ceoorcto.blob.core.windows.net/ceoorcto/ctos/baby_huaman.png"
   }
 ]

@@ -1,5 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 interface Person {
   id: string;
@@ -70,6 +74,11 @@ function cleanCSVAndConvertToJSON(type: string = 'ceo') {
   const csvPath = path.join(__dirname, `${type}_profiles.csv`);
   const outputPath = path.join(__dirname, `../lib/${type}_data.json`);
 
+  // Azure Blob Storage configuration
+  const storageAccountName = process.env.AZURE_STORAGE_ACCOUNT_NAME || 'your-storage-account';
+  const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME || 'profiles';
+  const blobBaseUrl = `https://${storageAccountName}.blob.core.windows.net/${containerName}`;
+
   // Read CSV file
   const csvContent = fs.readFileSync(csvPath, 'utf-8');
   const lines = csvContent.split('\n').filter(line => line.trim());
@@ -93,7 +102,7 @@ function cleanCSVAndConvertToJSON(type: string = 'ceo') {
       company: company || '',
       role: type.toLowerCase() === 'ceo' ? 'CEO' : 'CTO',
       type: 'forced_to_socialize' as const,
-      imageUrl: `/${type}s/${linkedInId}.jpg`, // Placeholder path
+      imageUrl: `${blobBaseUrl}/${type}s/${linkedInId}.jpg`,
       location: 'Peru',
     };
   }).filter((person): person is Person => person !== null);

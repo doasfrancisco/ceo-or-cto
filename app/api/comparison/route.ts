@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllPeople, getPeopleByLocation, getPersonById } from "@/lib/cosmosdb";
-import { FIRST_VISIT_IDS } from "@/lib/data";
 import { ComparisonPair, Person } from "@/lib/types";
 
 function applyEasterImage(person: Person): Person {
@@ -57,8 +56,10 @@ export async function GET(request: NextRequest) {
     let person1, person2;
 
     if (isFirstVisit) {
-      person1 = await getPersonById(FIRST_VISIT_IDS[0]);
-      person2 = await getPersonById(FIRST_VISIT_IDS[1]);
+      person1 = await getPersonById('yo');
+      person2 = await getPersonById('mati');
+
+      console.log("First visit persons:", person1, person2);
 
       if (!person1 || !person2) {
         return NextResponse.json(
