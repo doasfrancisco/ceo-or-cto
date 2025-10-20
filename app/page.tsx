@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { ComparisonPair } from "@/lib/types";
+import { analytics } from "@/lib/mixpanel";
 
 export default function Home() {
   const [comparison, setComparison] = useState<ComparisonPair | null>(null);
@@ -45,7 +46,20 @@ export default function Home() {
 
         if (firstVisit) {
           localStorage.setItem("hasVisited", "true");
+          analytics.trackFirstVisit();
         }
+
+        // Track comparison view
+        analytics.trackComparisonView({
+          person1Id: data.person1.id,
+          person1Name: data.person1.name,
+          person1Role: data.person1.role || '',
+          person2Id: data.person2.id,
+          person2Name: data.person2.name,
+          person2Role: data.person2.role || '',
+          category: cat,
+          isFirstVisit: firstVisit,
+        });
       }
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -73,8 +87,21 @@ export default function Home() {
       musicStartedRef.current = true;
     }
 
-    // TODO: Send selection to backend for ranking
-    console.log("Selected person:", personId);
+    // Track selection event
+    if (comparison) {
+      const selectedPerson = comparison.person1.id === personId ? comparison.person1 : comparison.person2;
+      const otherPerson = comparison.person1.id === personId ? comparison.person2 : comparison.person1;
+
+      analytics.trackSelection({
+        selectedPersonId: selectedPerson.id,
+        selectedPersonName: selectedPerson.name,
+        selectedPersonRole: selectedPerson.role || '',
+        otherPersonId: otherPerson.id,
+        otherPersonName: otherPerson.name,
+        otherPersonRole: otherPerson.role || '',
+        category,
+      });
+    }
 
     setComparison(null);
     fetchComparison();
@@ -82,6 +109,7 @@ export default function Home() {
 
   const handleCategoryChange = (newCategory: string) => {
     setCategory(newCategory);
+    analytics.trackCategoryChange(newCategory);
     fetchComparison(newCategory);
   };
 

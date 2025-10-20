@@ -1,8 +1,8 @@
 # TODO List
-[] Add logic to send events to mixpanel
 
 
 # Done
+[x] Add logic to send events to mixpanel
 [x] Add new attr to @data.ts so it shows baby kevin 1 of 3 times.
 [x] Add new attr "type" to tell CTOs from CEOs: "forced_to_socialize" and "probably_uses_glasses"
 [x] Based on location of the user, show images from specific location
