@@ -77,6 +77,13 @@ function getMatchupsByPercentile(people: Person[]): Person[] {
 
 export async function GET(request: NextRequest) {
   try {
+    console.log("API route called - Environment check:", {
+      hasEndpoint: !!process.env.COSMOS_DB_ENDPOINT,
+      hasKey: !!process.env.COSMOS_DB_KEY,
+      databaseId: process.env.COSMOS_DB_DATABASE_ID,
+      containerId: process.env.COSMOS_DB_CONTAINER_ID
+    });
+
     const searchParams = request.nextUrl.searchParams;
     const isFirstVisit = searchParams.get("firstVisit") === "true";
     let location = searchParams.get("location") || "random";
@@ -140,8 +147,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error) {
     console.error("Error in comparison API:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: "Failed to fetch comparison data" },
+      {
+        error: "Failed to fetch comparison data",
+        details: errorMessage,
+        stack: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined
+      },
       { status: 500 }
     );
   }
