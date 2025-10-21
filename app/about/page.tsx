@@ -1,8 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback } from "react";
 
 export default function AboutPage() {
+
+    const createSharePostUrl = useCallback(() => {
+      const lines: string[] = [
+        `Make your own https://ceo-or-cto.com at GitHub!`
+      ];
+  
+      lines.push(` `);
+      lines.push(`Opensourced: https://github.com/doasfrancisco/ceo-or-cto`);
+  
+      const encodedText = encodeURIComponent(lines.join("\n"));
+  
+      return `https://www.linkedin.com/feed/?shareActive&mini=true&text=${encodedText}`;
+    }, []);
+    
   return (
     <div className="min-h-screen bg-[#fdfcfc] flex flex-col">
       <header className="bg-[#8c1d0a] text-white py-6 text-center">
@@ -34,7 +49,7 @@ export default function AboutPage() {
         <p className="max-w-2xl text-lg md:text-xl leading-relaxed mb-6">
           Check source code on{" "}
           <a
-            href="https://github.com/doasfrancisco/ceo-or-cto"
+            href={createSharePostUrl()}
             target="_blank"
             rel="noopener noreferrer"
             className="text-[#8c1d0a] font-semibold hover:underline"
