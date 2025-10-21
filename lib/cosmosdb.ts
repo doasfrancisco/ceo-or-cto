@@ -70,3 +70,39 @@ export async function getPersonById(id: string): Promise<Person | null> {
     return null;
   }
 }
+
+export async function updatePersonStatsFromTemp(
+  id: string,
+  totalTempIncrement: number,
+  srTempIncrement: number
+): Promise<void> {
+  try {
+    const cosmosClient = getClient();
+    const database = cosmosClient.database(databaseId);
+    const container = database.container(containerId);
+
+    // Read current person from DB
+    const { resource: person } = await container.item(id, id).read();
+
+    if (!person) {
+      console.error(`Person with id ${id} not found`);
+      return;
+    }
+
+    // Sum temp values to permanent values
+    const updatedPerson = {
+      ...person,
+      total: Number(person.total) + totalTempIncrement,
+      SR: Number(person.SR) + srTempIncrement,
+    };
+
+    // Update in DB
+    await container.item(id, id).replace(updatedPerson);
+    console.log(
+      `Updated person ${id}: total=${person.total}+${totalTempIncrement}=${updatedPerson.total}, SR=${person.SR}+${srTempIncrement}=${updatedPerson.SR}`
+    );
+  } catch (error) {
+    console.error(`Error updating person ${id}:`, error);
+    throw error;
+  }
+}
