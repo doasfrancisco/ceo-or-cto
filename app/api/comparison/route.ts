@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllPeople, getPeopleByLocation, getPersonById } from "@/lib/cosmosdb";
+import { getAllPeople, getPeopleByLocation, getPersonById, updatePersonStatsFromTemp } from "@/lib/cosmosdb";
 import { ComparisonPair, Person } from "@/lib/types";
 
 function applyEasterImage(person: Person): Person {
-  if (person.easterImageUrl && Math.random() < 1/3) {
-    return {
-      ...person,
-      imageUrl: person.easterImageUrl,
-    };
-  }
-  return person;
+  const updatedPerson = person.easterImageUrl && Math.random() < 1/3
+    ? { ...person, imageUrl: person.easterImageUrl }
+    : person;
+
+  // Initialize temp counters to 0
+  return {
+    ...updatedPerson,
+    total_temp: 0n,
+    SR_temp: 0n,
+  };
 }
 
 function getMatchupsByPercentile(people: Person[]): Person[] {
@@ -141,6 +144,39 @@ export async function GET(request: NextRequest) {
     console.error("Error in comparison API:", error);
     return NextResponse.json(
       { error: "Failed to fetch comparison data" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { people } = body as { people: Person[] };
+
+    if (!people || !Array.isArray(people)) {
+      return NextResponse.json(
+        { error: "Invalid request body. Expected array of people." },
+        { status: 400 }
+      );
+    }
+
+    // Update each person's stats in parallel
+    const updatePromises = people.map(person =>
+      updatePersonStatsFromTemp(
+        person.id,
+        Number(person.total_temp),
+        Number(person.SR_temp)
+      )
+    );
+
+    await Promise.all(updatePromises);
+
+    return NextResponse.json({ success: true, updated: people.length });
+  } catch (error) {
+    console.error("Error updating stats:", error);
+    return NextResponse.json(
+      { error: "Failed to update stats" },
       { status: 500 }
     );
   }

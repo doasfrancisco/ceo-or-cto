@@ -83,9 +83,28 @@ export default function Home() {
     }
   };
 
+  const updateStatsAndFetchNew = async () => {
+    // Update stats in DB before fetching new matchups
+    if (matchupsRef.current) {
+      try {
+        await fetch('/api/comparison', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ people: matchupsRef.current }),
+        });
+      } catch (error) {
+        console.error('Failed to update stats:', error);
+      }
+    }
+
+    // Fetch new matchups
+    fetchNewMatchups();
+  };
+
   const showNextPair = () => {
     if (!matchupsRef.current || currentPairIndexRef.current >= 5) {
-      fetchNewMatchups();
+      // Need to update stats and fetch new matchups
+      updateStatsAndFetchNew();
       return;
     }
 
@@ -134,10 +153,31 @@ export default function Home() {
       musicStartedRef.current = true;
     }
 
-    // Track selection event
+    // Track selection event and update temp stats
     if (comparison) {
       const selectedPerson = comparison.person1.id === personId ? comparison.person1 : comparison.person2;
       const otherPerson = comparison.person1.id === personId ? comparison.person2 : comparison.person1;
+
+      // Update temp stats in the cached matchups
+      if (matchupsRef.current) {
+        matchupsRef.current = matchupsRef.current.map(person => {
+          if (person.id === selectedPerson.id) {
+            // Selected person: increment both total_temp and SR_temp
+            return {
+              ...person,
+              total_temp: (BigInt(person.total_temp) + 1n) as any as BigInteger,
+              SR_temp: (BigInt(person.SR_temp) + 1n) as any as BigInteger,
+            };
+          } else if (person.id === otherPerson.id) {
+            // Other person: only increment total_temp
+            return {
+              ...person,
+              total_temp: (BigInt(person.total_temp) + 1n) as any as BigInteger,
+            };
+          }
+          return person;
+        });
+      }
 
       analytics.trackSelection({
         selectedPersonId: selectedPerson.id,

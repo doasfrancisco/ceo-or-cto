@@ -9,6 +9,8 @@ export interface Person {
   easterImageUrl?: string;
   total: BigInteger;
   SR: BigInteger;
+  total_temp: BigInteger;
+  SR_temp: BigInteger
 }
 
 export interface ComparisonPair {
