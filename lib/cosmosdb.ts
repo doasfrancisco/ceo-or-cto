@@ -93,13 +93,13 @@ export async function updatePersonStatsFromTemp(
     const updatedPerson = {
       ...person,
       total: Number(person.total) + totalTempIncrement,
-      SR: Number(person.SR) + srTempIncrement,
+      sr: Number(person.sr) + srTempIncrement,
     };
 
     // Update in DB
     await container.item(id, id).replace(updatedPerson);
     console.log(
-      `Updated person ${id}: total=${person.total}+${totalTempIncrement}=${updatedPerson.total}, SR=${person.SR}+${srTempIncrement}=${updatedPerson.SR}`
+      `Updated person ${id}: total=${person.total}+${totalTempIncrement}=${updatedPerson.total}, SR=${person.sr}+${srTempIncrement}=${updatedPerson.sr}`
     );
   } catch (error) {
     console.error(`Error updating person ${id}:`, error);

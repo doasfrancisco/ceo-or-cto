@@ -9,6 +9,10 @@ export default function Home() {
   const [comparison, setComparison] = useState<ComparisonPair | null>(null);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState("random");
+  const [showResult, setShowResult] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
+  const [otherPerson, setOtherPerson] = useState<Person | null>(null);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -113,6 +117,13 @@ export default function Home() {
     const person1 = matchupsRef.current[pairIndex * 2];
     const person2 = matchupsRef.current[pairIndex * 2 + 1];
 
+    // Safety check: if person1 or person2 is undefined, fetch new matchups
+    if (!person1 || !person2) {
+      console.error("Invalid matchup pair at index", pairIndex, "- fetching new matchups");
+      updateStatsAndFetchNew();
+      return;
+    }
+
     // Increment for next time
     currentPairIndexRef.current += 1;
 
@@ -155,24 +166,27 @@ export default function Home() {
 
     // Track selection event and update temp stats
     if (comparison) {
-      const selectedPerson = comparison.person1.id === personId ? comparison.person1 : comparison.person2;
-      const otherPerson = comparison.person1.id === personId ? comparison.person2 : comparison.person1;
+      const selected = comparison.person1.id === personId ? comparison.person1 : comparison.person2;
+      const other = comparison.person1.id === personId ? comparison.person2 : comparison.person1;
 
-      // Update temp stats in the cached matchups
+      const correct = selected.role === 'CTO';
+      setIsCorrect(correct);
+      setSelectedPerson(selected);
+      setOtherPerson(other);
+      setShowResult(true);
+
       if (matchupsRef.current) {
         matchupsRef.current = matchupsRef.current.map(person => {
-          if (person.id === selectedPerson.id) {
-            // Selected person: increment both total_temp and SR_temp
+          if (person.id === selected.id) {
             return {
               ...person,
-              total_temp: (BigInt(person.total_temp) + 1n) as any as BigInteger,
-              SR_temp: (BigInt(person.SR_temp) + 1n) as any as BigInteger,
+              total_temp: person.total_temp + 1,
+              SR_temp: person.SR_temp + 1,
             };
-          } else if (person.id === otherPerson.id) {
-            // Other person: only increment total_temp
+          } else if (person.id === other.id) {
             return {
               ...person,
-              total_temp: (BigInt(person.total_temp) + 1n) as any as BigInteger,
+              total_temp: person.total_temp + 1,
             };
           }
           return person;
@@ -180,19 +194,22 @@ export default function Home() {
       }
 
       analytics.trackSelection({
-        selectedPersonId: selectedPerson.id,
-        selectedPersonName: selectedPerson.name,
-        selectedPersonRole: selectedPerson.role || '',
-        otherPersonId: otherPerson.id,
-        otherPersonName: otherPerson.name,
-        otherPersonRole: otherPerson.role || '',
+        selectedPersonId: selected.id,
+        selectedPersonName: selected.name,
+        selectedPersonRole: selected.role || '',
+        otherPersonId: other.id,
+        otherPersonName: other.name,
+        otherPersonRole: other.role || '',
         category,
       });
-    }
 
-    setComparison(null);
-    // Show next pair from cache or fetch new matchups
-    showNextPair();
+      // Auto-advance after 2 seconds
+      setTimeout(() => {
+        setShowResult(false);
+        setComparison(null);
+        showNextPair();
+      }, 2000);
+    }
   };
 
   const handleCategoryChange = (newCategory: string) => {
@@ -234,57 +251,95 @@ export default function Home() {
         </div>
 
         {/* Image Comparison Section */}
-        <div className="flex items-center gap-3 md:gap-4 mb-12">
-          {loading || !comparison ? (
-            <>
-              {/* Loading placeholders */}
-              <div className="w-48 h-64 md:w-60 md:h-80 bg-[#8c1d0a] border-4 animate-pulse" />
-              <div className="text-2xl md:text-3xl text-black">OR</div>
-              <div className="w-48 h-64 md:w-60 md:h-80 bg-[#8c1d0a] border-4 animate-pulse" />
-            </>
-          ) : (
-            <>
-              {/* Left Image */}
-              <button
-                className="group cursor-pointer"
-                onClick={() => handleSelect(comparison.person1.id)}
-              >
-                <div className="w-48 h-64 md:w-60 md:h-80 border-4 hover:border-[#8c1d0a] transition-colors overflow-hidden relative">
-                  <Image
-                    src={comparison.person1.imageUrl}
-                    alt={comparison.person1.name}
-                    fill
-                    className="object-cover"
-                  />
-                  {/* <div className="absolute bottom-0 left-0 bg-black/50 text-white text-xs p-1">
-                    {comparison.person1.name}
-                    {comparison.person1.imageUrl}
-                  </div> */}
-                </div>
-              </button>
+        <div className="flex flex-col items-center gap-4 mb-12">
+          <div className="flex items-center gap-3 md:gap-4">
+            {loading || !comparison ? (
+              <>
+                {/* Loading placeholders */}
+                <div className="w-48 h-64 md:w-60 md:h-80 bg-[#8c1d0a] border-4 animate-pulse" />
+                <div className="text-2xl md:text-3xl text-black">OR</div>
+                <div className="w-48 h-64 md:w-60 md:h-80 bg-[#8c1d0a] border-4 animate-pulse" />
+              </>
+            ) : (
+              <>
+                {/* Left Image */}
+                <button
+                  className="group cursor-pointer"
+                  onClick={() => handleSelect(comparison.person1.id)}
+                >
+                  <div className={`w-48 h-64 md:w-60 md:h-80 border-4 transition-colors overflow-hidden relative ${
+                    showResult
+                      ? (selectedPerson?.id === comparison.person1.id && isCorrect)
+                        ? 'border-green-500 border-8'
+                        : (selectedPerson?.id === comparison.person1.id && !isCorrect)
+                        ? 'border-red-500 border-8'
+                        : 'border-gray-400'
+                      : 'hover:border-[#8c1d0a]'
+                  }`}>
+                    <Image
+                      src={comparison.person1.imageUrl}
+                      alt={comparison.person1.name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                </button>
 
-              {/* OR Text */}
-              <div className="text-2xl md:text-3xl text-black">OR</div>
+                {/* OR Text */}
+                <div className="text-2xl md:text-3xl text-black">OR</div>
 
-              {/* Right Image */}
-              <button
-                className="group cursor-pointer"
-                onClick={() => handleSelect(comparison.person2.id)}
-              >
-                <div className="w-48 h-64 md:w-60 md:h-80 border-4 hover:border-[#8c1d0a] transition-colors overflow-hidden relative">
-                  <Image
-                    src={comparison.person2.imageUrl}
-                    alt={comparison.person2.name}
-                    fill
-                    className="object-cover"
-                  />
-                  {/* <div className="absolute bottom-0 left-0 bg-black/50 text-white text-xs p-1">
-                    {comparison.person2.name}
-                    {comparison.person2.imageUrl}
-                  </div> */}
-                </div>
-              </button>
-            </>
+                {/* Right Image */}
+                <button
+                  className="group cursor-pointer"
+                  onClick={() => handleSelect(comparison.person2.id)}
+                >
+                  <div className={`w-48 h-64 md:w-60 md:h-80 border-4 transition-colors overflow-hidden relative ${
+                    showResult
+                      ? (selectedPerson?.id === comparison.person2.id && isCorrect)
+                        ? 'border-green-500 border-8'
+                        : (selectedPerson?.id === comparison.person2.id && !isCorrect)
+                        ? 'border-red-500 border-8'
+                        : 'border-gray-400'
+                      : 'hover:border-[#8c1d0a]'
+                  }`}>
+                    <Image
+                      src={comparison.person2.imageUrl}
+                      alt={comparison.person2.name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Result Display */}
+          {showResult && selectedPerson && otherPerson && comparison && (
+            <div className="text-center mt-4">
+              <p className={`text-2xl font-bold mb-2 ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                {isCorrect ? 'Good Job!' : 'Oops! Wrong Choice'}
+              </p>
+              <div className="flex gap-4 justify-center text-sm">
+                <a
+                  href={comparison.person1.imageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  {comparison.person1.name} ({comparison.person1.role})
+                </a>
+                <span>vs</span>
+                <a
+                  href={comparison.person2.imageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  {comparison.person2.name} ({comparison.person2.role})
+                </a>
+              </div>
+            </div>
           )}
         </div>
 

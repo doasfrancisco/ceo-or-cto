@@ -13,8 +13,8 @@ interface Person {
   type: "forced_to_socialize" | "probably_uses_glasses";
   imageUrl: string;
   location: string;
-  total: BigInt;
-  sr: BigInt;
+  total: number;
+  sr: number;
   linkedInUrl: string;
   easterImageUrl?: string;
 }

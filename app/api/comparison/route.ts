@@ -10,8 +10,8 @@ function applyEasterImage(person: Person): Person {
   // Initialize temp counters to 0
   return {
     ...updatedPerson,
-    total_temp: 0n,
-    SR_temp: 0n,
+    total_temp: 0,
+    SR_temp: 0,
   };
 }
 
@@ -26,14 +26,14 @@ function getMatchupsByPercentile(people: Person[]): Person[] {
 
   // Ordenar cada arreglo por SR/Total_veces (descendente - mayor rating primero)
   const sortedCEOs = [...ceos].sort((a, b) => {
-    const ratioA = Number(a.total) > 0 ? Number(a.SR) / Number(a.total) : 0;
-    const ratioB = Number(b.total) > 0 ? Number(b.SR) / Number(b.total) : 0;
+    const ratioA = Number(a.total) > 0 ? Number(a.sr) / Number(a.total) : 0;
+    const ratioB = Number(b.total) > 0 ? Number(b.sr) / Number(b.total) : 0;
     return ratioB - ratioA;
   });
 
   const sortedCTOs = [...ctos].sort((a, b) => {
-    const ratioA = Number(a.total) > 0 ? Number(a.SR) / Number(a.total) : 0;
-    const ratioB = Number(b.total) > 0 ? Number(b.SR) / Number(b.total) : 0;
+    const ratioA = Number(a.total) > 0 ? Number(a.sr) / Number(a.total) : 0;
+    const ratioB = Number(b.total) > 0 ? Number(b.sr) / Number(b.total) : 0;
     return ratioB - ratioA;
   });
 
@@ -71,8 +71,6 @@ function getMatchupsByPercentile(people: Person[]): Person[] {
     const cto = getRandomPersonInPercentileRange(sortedCTOs, range.start, range.end);
     matchups.push(applyEasterImage(ceo), applyEasterImage(cto));
   });
-
-  console.log(matchups);
 
   return matchups;
 }
@@ -138,7 +136,7 @@ export async function GET(request: NextRequest) {
       isFirstVisit,
       matchups,
     };
-
+    
     return NextResponse.json(response);
   } catch (error) {
     console.error("Error in comparison API:", error);

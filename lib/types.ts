@@ -7,10 +7,11 @@ export interface Person {
   imageUrl: string;
   location: string;
   easterImageUrl?: string;
-  total: BigInteger;
-  SR: BigInteger;
-  total_temp: BigInteger;
-  SR_temp: BigInteger
+  total: number;
+  sr: number;
+  total_temp?: number;
+  SR_temp?: number;
+  linkedinUrl: string;
 }
 
 export interface ComparisonPair {
