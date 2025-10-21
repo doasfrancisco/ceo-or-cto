@@ -76,7 +76,6 @@ function RankingColumn({
       shareLines.push(`${person.linkedInUrl}`);  
       const encodedText = encodeURIComponent(shareLines.join("\n"));
       const mobileUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedText}`;
-      console.log("Mobile share URL:", mobileUrl);
       return mobileUrl;
     }
 

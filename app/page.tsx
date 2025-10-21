@@ -23,6 +23,7 @@ export default function Home() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [otherPerson, setOtherPerson] = useState<Person | null>(null);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -39,6 +40,10 @@ export default function Home() {
 
   useEffect(() => {
     analytics.ensureIdentity();
+    if (typeof navigator !== "undefined") {
+      const userAgent = navigator.userAgent || "";
+      setIsMobileDevice(/android|iphone|ipad|ipod|mobile/i.test(userAgent));
+    }
   }, []);
 
   const readComparisonFromCache = useCallback((cat: string): ComparisonPair | null => {
@@ -78,20 +83,26 @@ export default function Home() {
   }, []);
 
   const createLinkedInShareUrl = useCallback((person: Person) => {
-    const roleText = person.role ? `${person.role}` : "";
-    const lines: string[] = [
-      `@${person.id} eres el ${roleText} en https://ceo-or-cto.com!`
-    ];
+    const roleText = person.role ? person.role : "CTO";
+    const lines: string[] = [];
 
-    if (person.linkedInUrl) {
-      lines.push(` `);
-      lines.push(`LinkedIn: ${person.linkedInUrl}`);
+    if (isMobileDevice) {
+      lines.push(`@doasfrancisco @${person.id} eres el ${roleText} en el juegoCEO or CTO! `);
+      lines.push(person.linkedInUrl);
+
+      const mobileEncoded = encodeURIComponent(lines.join("\n"));
+      const mobileShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${mobileEncoded}&title=HOLA`;
+      return mobileShareUrl;
+
+    } else {
+      lines.push(`@doasfrancisco @${person.id} eres el ${roleText} en https://ceo-or-cto.com`);
+      lines.push(" ");
+      lines.push(person.linkedInUrl);
+      const desktopEncoded = encodeURIComponent(lines.join("\n"));
+      const desktopShareUrl = `https://www.linkedin.com/feed/?shareActive&mini=true&text=${desktopEncoded}`;
+      return desktopShareUrl;
     }
-
-    const encodedText = encodeURIComponent(lines.join("\n"));
-
-    return `https://www.linkedin.com/feed/?shareActive&mini=true&text=${encodedText}`;
-  }, []);
+  }, [isMobileDevice]);
 
   const preloadImage = (url?: string | null) => {
     if (!url || typeof window === "undefined") return;
