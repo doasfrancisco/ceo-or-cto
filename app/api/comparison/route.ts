@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllPeople, getPeopleByLocation, getPersonById, updatePersonStatsFromTemp } from "@/lib/cosmosdb";
+import { getAllPeople, getPeopleByLocation, updatePersonStatsFromTemp } from "@/lib/cosmosdb";
 import { ComparisonPair, Person } from "@/lib/types";
+import { FIRST_COMPARISON } from "@/lib/firstVisit";
 
 function applyEasterImage(person: Person): Person {
   const updatedPerson = person.easterImageUrl && Math.random() < 1/3
@@ -108,34 +109,21 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    let person1, person2;
-    let matchups: Person[] | undefined;
-
     if (isFirstVisit) {
-      person1 = await getPersonById('yo');
-      person2 = await getPersonById('mati');
-
-      console.log("First visit persons:", person1, person2);
-
-      if (!person1 || !person2) {
-        return NextResponse.json(
-          { error: "First visit images not found" },
-          { status: 500 }
-        );
-      }
-    } else {
-      let people: Person[];
-      if (location && location !== "random") {
-        people = await getPeopleByLocation(location);
-      } else {
-        people = await getAllPeople();
-      }
-
-      matchups = getMatchupsByPercentile(people);
-
-      person1 = matchups[0];
-      person2 = matchups[1];
+      return NextResponse.json(FIRST_COMPARISON);
     }
+
+    let people: Person[];
+    if (location && location !== "random") {
+      people = await getPeopleByLocation(location);
+    } else {
+      people = await getAllPeople();
+    }
+
+    const matchups = getMatchupsByPercentile(people);
+
+    const person1 = matchups[0];
+    const person2 = matchups[1];
 
     const response: ComparisonPair = {
       person1,
@@ -143,7 +131,7 @@ export async function GET(request: NextRequest) {
       isFirstVisit,
       matchups,
     };
-    
+
     return NextResponse.json(response);
   } catch (error) {
     console.error("Error in comparison API:", error);
@@ -161,17 +149,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { people } = body as { people: Person[] };
+    const { people } = await request.json() as { people: Person[] };
 
-    if (!people || !Array.isArray(people)) {
-      return NextResponse.json(
-        { error: "Invalid request body. Expected array of people." },
-        { status: 400 }
-      );
-    }
-
-    // Update each person's stats in parallel
     const updatePromises = people.map(person =>
       updatePersonStatsFromTemp(
         person.id,

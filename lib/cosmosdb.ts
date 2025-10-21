@@ -81,7 +81,6 @@ export async function updatePersonStatsFromTemp(
     const database = cosmosClient.database(databaseId);
     const container = database.container(containerId);
 
-    // Read current person from DB
     const { resource: person } = await container.item(id, id).read();
 
     if (!person) {
@@ -89,14 +88,12 @@ export async function updatePersonStatsFromTemp(
       return;
     }
 
-    // Sum temp values to permanent values
     const updatedPerson = {
       ...person,
       total: Number(person.total) + totalTempIncrement,
       sr: Number(person.sr) + srTempIncrement,
     };
 
-    // Update in DB
     await container.item(id, id).replace(updatedPerson);
     console.log(
       `Updated person ${id}: total=${person.total}+${totalTempIncrement}=${updatedPerson.total}, SR=${person.sr}+${srTempIncrement}=${updatedPerson.sr}`
