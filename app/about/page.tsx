@@ -10,9 +10,6 @@ export default function AboutPage() {
       </header>
 
       <main className="flex-1 flex flex-col items-center px-4 py-10 text-center text-black">
-        <p className="max-w-2xl text-lg md:text-xl leading-relaxed mb-6">
-          Guess who&apos;s leading the tech and who&apos;s steering the ship across Latin America.
-        </p>
         <p className="max-w-2xl text-lg md:text-xl leading-relaxed mb-10">
           Built by Francisco (
           <a
@@ -34,7 +31,18 @@ export default function AboutPage() {
           </a>
           ).
         </p>
-        <Link href="/" className="text-[#8c1d0a] font-bold hover:underline">
+        <p className="max-w-2xl text-lg md:text-xl leading-relaxed mb-6">
+          Check source code on{" "}
+          <a
+            href="https://github.com/doasfrancisco/ceo-or-cto"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#8c1d0a] font-semibold hover:underline"
+          >
+             Github (Click here)
+          </a>
+        </p>
+        <Link href="/" className="text-[#8c1d0a] font-bold hover:underline mt-10">
           Go back
         </Link>
       </main>

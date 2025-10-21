@@ -562,7 +562,7 @@ export default function Home() {
           </div>
 
           {/* Result Display */}
-          <div className="w-full mt-4 min-h-[160px] md:min-h-[90px] flex flex-col items-center justify-center">
+          <div className="w-full mt-4 min-h-[130px] md:min-h-[90px] flex flex-col items-center justify-center">
             {showResult && selectedPerson && otherPerson && comparison && (
               <div className="text-center">
                 <p className={`text-2xl font-bold mb-2 ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
@@ -673,7 +673,7 @@ export default function Home() {
         </nav> */}
 
         {/* Footer Links */}
-        <footer className="mt-6 md:mt-0 flex gap-6 text-black font-bold justify-center">
+        <footer className="flex gap-6 text-black font-bold justify-center">
           <Link href="/about" className="hover:underline">About</Link>
           <a href="#" className="hover:underline">Rankings</a>
           {/* <a href="#" className="hover:underline">Previous</a> */}
