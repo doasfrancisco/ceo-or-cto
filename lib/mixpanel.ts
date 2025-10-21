@@ -27,9 +27,10 @@ const ensureDistinctId = () => {
   }
 };
 
+console.log('Mixpanel is debug mode:', process.env.NEXT_PUBLIC_SETUP === 'local');
 if (MIXPANEL_TOKEN && isBrowser) {
   mixpanel.init(MIXPANEL_TOKEN, {
-    debug: true,
+    debug: process.env.NEXT_PUBLIC_SETUP === 'local',
     track_pageview: true,
     persistence: 'localStorage',
     record_sessions_percent: 100,
