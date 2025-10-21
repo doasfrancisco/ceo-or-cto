@@ -21,7 +21,7 @@ export default async function AboutPage() {
   const encodedText = encodeURIComponent(selectedLines);
 
   const shareUrl = isMobile
-    ? `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://github.com/doasfrancisco/ceo-or-cto?utm_source=linkedin-mobile&message=${encodedText}`)}`
+    ? `https://www.linkedin.com/sharing/share-offsite/?url=${encodedText})}`
     : `https://www.linkedin.com/feed/?shareActive&mini=true&text=${encodedText}`;
     
   return (
