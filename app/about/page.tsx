@@ -1,22 +1,28 @@
-"use client";
-
 import Link from "next/link";
-import { useCallback } from "react";
+import { headers } from "next/headers";
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const userAgent = (await headers()).get("user-agent") ?? "";
+  const isMobile = /android|iphone|ipad|ipod|mobile/i.test(userAgent);
 
-    const createSharePostUrl = useCallback(() => {
-      const lines: string[] = [
-        `Make your own https://ceo-or-cto.com at GitHub!`
-      ];
-  
-      lines.push(` `);
-      lines.push(`Opensourced: https://github.com/doasfrancisco/ceo-or-cto`);
-  
-      const encodedText = encodeURIComponent(lines.join("\n"));
-  
-      return `https://www.linkedin.com/feed/?shareActive&mini=true&text=${encodedText}`;
-    }, []);
+  const desktopLines = [
+    "Make your own https://ceo-or-cto.com at GitHub!",
+    "",
+    "Opensourced: https://github.com/doasfrancisco/ceo-or-cto",
+  ];
+
+  const mobileLines = [
+    "@doasfrancisco make your own https://ceo-or-cto.com at GitHub!",
+    "",
+    "Opensourced: https://github.com/doasfrancisco/ceo-or-cto",
+  ];
+
+  const selectedLines = (isMobile ? mobileLines : desktopLines).join("\n");
+  const encodedText = encodeURIComponent(selectedLines);
+
+  const shareUrl = isMobile
+    ? `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://github.com/doasfrancisco/ceo-or-cto?utm_source=linkedin-mobile&message=${encodedText}`)}`
+    : `https://www.linkedin.com/feed/?shareActive&mini=true&text=${encodedText}`;
     
   return (
     <div className="min-h-screen bg-[#fdfcfc] flex flex-col">
@@ -49,7 +55,7 @@ export default function AboutPage() {
         <p className="max-w-2xl text-lg md:text-xl leading-relaxed mb-6">
           Check source code on{" "}
           <a
-            href={createSharePostUrl()}
+            href={shareUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="text-[#8c1d0a] font-semibold hover:underline"

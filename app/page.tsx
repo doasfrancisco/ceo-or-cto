@@ -496,7 +496,7 @@ export default function Home() {
 
       {/* Header */}
       <header className="bg-[#8c1d0a] text-white py-6 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold tracking-wider">CEO OR CTO</h1>
+        <h1 className="text-3xl md:text-5xl font-bold tracking-wider">CEO OR CTO</h1>
       </header>
 
       {/* Main Content */}
@@ -508,10 +508,8 @@ export default function Home() {
             <br className="block md:hidden" />
             <span className="md:ml-2">Will we be judged on them? Yes.</span>
           </p>
-          <p className="text-2xl md:text-4xl font-bold text-black mt-4">
-            Who&apos;s the CTO?
-            <br className="block md:hidden" />
-            <span className="md:ml-2">Click to Choose.</span>
+          <p className="text-xl md:text-4xl font-bold text-black mt-4">
+            Who&apos;s the CTO? Click to Choose.
           </p>
         </div>
 
@@ -580,7 +578,7 @@ export default function Home() {
           </div>
 
           {/* Result Display */}
-          <div className="w-full mt-4 min-h-[130px] md:min-h-[90px] flex flex-col items-center justify-center">
+          <div className="w-full mt-4 min-h-[90px] md:min-h-[90px] flex flex-col items-center justify-center">
             {showResult && selectedPerson && otherPerson && comparison && (
               <div className="text-center">
                 <p className={`text-2xl font-bold mb-2 ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
