@@ -12,7 +12,7 @@ export default async function AboutPage() {
   ];
 
   const mobileLines = [
-    "@doasfrancisco make your own https://ceo-or-cto.com at GitHub!",
+    "@doasfrancisco make your own CEO or CTO at GitHub!",
     "",
     "Opensourced: https://github.com/doasfrancisco/ceo-or-cto",
   ];
@@ -21,7 +21,7 @@ export default async function AboutPage() {
   const encodedText = encodeURIComponent(selectedLines);
 
   const shareUrl = isMobile
-    ? `https://www.linkedin.com/sharing/share-offsite/?url=${encodedText})}`
+    ? `https://www.linkedin.com/sharing/share-offsite/?url=${encodedText}`
     : `https://www.linkedin.com/feed/?shareActive&mini=true&text=${encodedText}`;
     
   return (
