@@ -77,6 +77,28 @@ export default function Home() {
     analytics.trackFirstVisit();
   }, []);
 
+  const createLinkedInShareUrl = useCallback((person: Person) => {
+    const gameUrl = "https://ceo-or-cto.com";
+    const roleText = person.role ? ` (${person.role})` : "";
+    // const lines: string[] = [
+    //   `I just played CEO OR CTO and guessed ${person.name}${roleText}!`,
+    // ];
+    const lines: string[] = [
+      `Test`,
+    ];
+
+    if (person.linkedInUrl) {
+      lines.push(` `);
+      lines.push(`Link: https://www.google.com/`);
+    }
+
+    // lines.push(`Think you can guess? Play now: ${gameUrl}`);
+
+    const encodedText = encodeURIComponent(lines.join("\n"));
+
+    return `https://www.linkedin.com/feed/?shareActive&mini=true&text=${encodedText}`;
+  }, []);
+
   const preloadImage = (url?: string | null) => {
     if (!url || typeof window === "undefined") return;
     if (preloadedImagesRef.current.has(url)) return;
@@ -570,26 +592,36 @@ export default function Home() {
                 <p className={`text-2xl font-bold mb-2 ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
                   {isCorrect ? 'Correct!' : 'Wrong'}
                 </p>
-                <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center justify-items-center gap-2 text-sm md:text-base w-full max-w-2xl mx-auto px-2">
-                  <a
-                    href={comparison.person1.linkedInUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block w-full text-blue-600 hover:underline text-right whitespace-normal break-words leading-tight"
-                    title={`${comparison.person1.name} (${comparison.person1.role})`}
-                  >
-                    {comparison.person1.name} ({comparison.person1.role})
-                  </a>
-                  <span className="w-8 text-center font-semibold">vs</span>
-                  <a
-                    href={comparison.person2.linkedInUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block w-full text-blue-600 hover:underline text-left whitespace-normal break-words leading-tight"
-                    title={`${comparison.person2.name} (${comparison.person2.role})`}
-                  >
-                    {comparison.person2.name} ({comparison.person2.role})
-                  </a>
+                <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center justify-items-center gap-4 md:gap-6 text-sm md:text-base w-full max-w-2xl mx-auto px-2">
+                  <div className="flex flex-col items-end gap-1 text-right">
+                    <span className="font-medium whitespace-normal break-words leading-tight">
+                      {comparison.person1.name} ({comparison.person1.role})
+                    </span>
+                    <a
+                      href={createLinkedInShareUrl(comparison.person1)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline whitespace-normal break-words leading-tight"
+                      title={`LinkedIn ${comparison.person1.name}`}
+                    >
+                      LinkedIn (Click here)
+                    </a>
+                  </div>
+                  <span className="w-10 text-center font-semibold">vs</span>
+                  <div className="flex flex-col items-start gap-1 text-left">
+                    <span className="font-medium whitespace-normal break-words leading-tight">
+                      {comparison.person2.name} ({comparison.person2.role})
+                    </span>
+                    <a
+                      href={createLinkedInShareUrl(comparison.person2)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline whitespace-normal break-words leading-tight"
+                      title={`LinkedIn ${comparison.person2.name}`}
+                    >
+                      LinkedIn (Click here)
+                    </a>
+                  </div>
                 </div>
               </div>
             )}
