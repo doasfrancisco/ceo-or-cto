@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { ComparisonPair, Person } from "@/lib/types";
 import { analytics } from "@/lib/mixpanel";
 import { FIRST_COMPARISON } from "@/lib/firstVisit";
@@ -673,7 +674,7 @@ export default function Home() {
 
         {/* Footer Links */}
         <footer className="mt-6 md:mt-0 flex gap-6 text-black font-bold justify-center">
-          <a href="#" className="hover:underline">About</a>
+          <Link href="/about" className="hover:underline">About</Link>
           <a href="#" className="hover:underline">Rankings</a>
           {/* <a href="#" className="hover:underline">Previous</a> */}
         </footer>
