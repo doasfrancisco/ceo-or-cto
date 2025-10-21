@@ -80,7 +80,7 @@ export default function Home() {
   const createLinkedInShareUrl = useCallback((person: Person) => {
     const roleText = person.role ? `${person.role}` : "";
     const lines: string[] = [
-      `${person.name} eres el ${roleText} en https://ceo-or-cto.com!`
+      `@${person.id} eres el ${roleText} en https://ceo-or-cto.com!`
     ];
 
     if (person.linkedInUrl) {
@@ -423,7 +423,7 @@ export default function Home() {
   const handleSelect = (personId: string) => {
     // Start music on first click
     if (!musicStartedRef.current && audioRef.current) {
-      audioRef.current.volume = 0.3;
+      audioRef.current.volume = 0.2;
       audioRef.current.play().catch((error) => {
         console.log("Failed to play audio:", error);
       });
@@ -703,7 +703,7 @@ export default function Home() {
         {/* Footer Links */}
         <footer className="flex gap-6 text-black font-bold justify-center">
           <Link href="/about" className="hover:underline">About</Link>
-          <a href="#" className="hover:underline">Rankings</a>
+          <Link href="/rankings" className="hover:underline">Rankings</Link>
           {/* <a href="#" className="hover:underline">Previous</a> */}
         </footer>
       </main>

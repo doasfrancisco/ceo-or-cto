@@ -1,6 +1,6 @@
 [
   {
-    "id": "yo",
+    "id": "doasfrancisco",
     "name": "Francisco Dominguez",
     "company": "Maxilar",
     "role": "CEO",
@@ -12,7 +12,7 @@
     "linkedInUrl": "https://www.linkedin.com/in/doasfrancisco"
   },
   {
-    "id": "mati",
+    "id": "matiasavenda222",
     "name": "Matias Avendaño",
     "company": "Maxilar",
     "role": "CTO",
@@ -24,7 +24,7 @@
     "linkedInUrl": "https://www.linkedin.com/in/matiasavenda222/"
   },
   {
-    "id": "diego",
+    "id": "diego-sebastian-salazar-cervantes-54b27aa9",
     "name": "Diego Salazar",
     "company": "Livo",
     "role": "CEO",
@@ -36,7 +36,7 @@
     "linkedInUrl": "https://www.linkedin.com/in/diego-sebastian-salazar-cervantes-54b27aa9/"
   },
   {
-    "id": "miguel_huaman",
+    "id": "khuaman",
     "name": "Miguel Huaman",
     "company": "Livo",
     "role": "CTO",
