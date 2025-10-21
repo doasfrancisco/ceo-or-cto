@@ -157,7 +157,7 @@ export default function Home() {
   const handleSelect = (personId: string) => {
     // Start music on first click
     if (!musicStartedRef.current && audioRef.current) {
-      audioRef.current.volume = 0.2;
+      audioRef.current.volume = 0.3;
       audioRef.current.play().catch((error) => {
         console.log("Failed to play audio:", error);
       });
@@ -326,7 +326,7 @@ export default function Home() {
               </p>
               <div className="flex gap-4 justify-center text-sm">
                 <a
-                  href={comparison.person1.linkedinUrl}
+                  href={comparison.person1.linkedInUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:underline"
@@ -335,7 +335,7 @@ export default function Home() {
                 </a>
                 <span>vs</span>
                 <a
-                  href={comparison.person2.linkedinUrl}
+                  href={comparison.person2.linkedInUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:underline"

@@ -11,7 +11,7 @@ export interface Person {
   sr: number;
   total_temp?: number;
   SR_temp?: number;
-  linkedinUrl: string;
+  linkedInUrl: string;
 }
 
 export interface ComparisonPair {
