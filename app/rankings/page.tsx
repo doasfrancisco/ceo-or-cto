@@ -69,17 +69,27 @@ function RankingColumn({
 }) {
 
   const createSharePostUrl = useCallback((person: Person, index: number) => {
-  const lines: string[] = [
-    `@${person.id} you're ${index + 1}th on https://ceo-or-cto.com!`
-  ];
+    const lines: string[] = [
+      `@${person.id} you're ${index + 1}th on https://ceo-or-cto.com!`,
+      "",
+      `LinkedIn: ${person.linkedInUrl}`,
+    ];
 
-  lines.push(` `);
-  lines.push(`Linkedin: ${person.linkedInUrl}`);
+    const encodedText = encodeURIComponent(lines.join("\n"));
+    const desktopUrl = `https://www.linkedin.com/feed/?shareActive&mini=true&text=${encodedText}`;
 
-  const encodedText = encodeURIComponent(lines.join("\n"));
+    if (typeof navigator !== "undefined") {
+      const userAgent = navigator.userAgent || "";
+      const isMobile = /android|iphone|ipad|ipod|mobile/i.test(userAgent);
 
-  return `https://www.linkedin.com/feed/?shareActive&mini=true&text=${encodedText}`;
-}, []);
+      if (isMobile) {
+        const shareTarget = encodeURIComponent(`https://ceo-or-cto.com/rankings?person=${encodeURIComponent(person.id)}&rank=${index + 1}`);
+        return `https://www.linkedin.com/sharing/share-offsite/?url=${shareTarget}`;
+      }
+    }
+
+    return desktopUrl;
+  }, []);
 
   return (
     <section className="bg-white border border-[#8c1d0a]/20 rounded-xl shadow-sm p-6">
