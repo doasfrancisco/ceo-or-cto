@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { getAllPeople } from "@/lib/cosmosdb";
 import type { Person } from "@/lib/types";
-import { useCallback } from "react";
 
 export const dynamic = "force-dynamic";
 
@@ -63,33 +63,29 @@ async function fetchRankings(): Promise<RankedPerson[] | null> {
 function RankingColumn({
   title,
   data,
+  isMobile,
 }: {
   title: string;
   data: RankedPerson[];
+  isMobile: boolean;
 }) {
-
-  const createSharePostUrl = useCallback((person: Person, index: number) => {
-    const lines: string[] = [
-      `@${person.id} you're ${index + 1}th on https://ceo-or-cto.com!`,
-      "",
-      `LinkedIn: ${person.linkedInUrl}`,
-    ];
-
-    const encodedText = encodeURIComponent(lines.join("\n"));
-    const desktopUrl = `https://www.linkedin.com/feed/?shareActive&mini=true&text=${encodedText}`;
-
-    if (typeof navigator !== "undefined") {
-      const userAgent = navigator.userAgent || "";
-      const isMobile = /android|iphone|ipad|ipod|mobile/i.test(userAgent);
-
-      if (isMobile) {
-        const shareTarget = encodeURIComponent(`https://ceo-or-cto.com/rankings?person=${encodeURIComponent(person.id)}&rank=${index + 1}`);
-        return `https://www.linkedin.com/sharing/share-offsite/?url=${shareTarget}`;
-      }
+  const createSharePostUrl = (person: Person, index: number) => {
+    const shareLines: string[] = [];
+    if (isMobile) {
+      shareLines.push(`@${person.id} you're ${index + 1}th on https://ceo-or-cto.com/. `);
+      shareLines.push(`LinkedIn: ${person.linkedInUrl}`);  
+      const encodedText = encodeURIComponent(shareLines.join("\n"));
+      return `https://www.linkedin.com/sharing/share-offsite/?url=${encodedText}`;
     }
-
+    
+    shareLines.push(`@${person.id} you're ${index + 1}th on https://ceo-or-cto.com/`);
+    shareLines.push(` `);
+    shareLines.push(`LinkedIn: ${person.linkedInUrl}`);
+    
+    const encodedText = encodeURIComponent(shareLines.join("\n"));
+    const desktopUrl = `https://www.linkedin.com/feed/?shareActive&mini=true&text=${encodedText}`;
     return desktopUrl;
-  }, []);
+  };
 
   return (
     <section className="bg-white border border-[#8c1d0a]/20 rounded-xl shadow-sm p-6">
@@ -132,6 +128,8 @@ function RankingColumn({
 
 export default async function RankingsPage() {
   const rankings = await fetchRankings();
+  const userAgent = (await headers()).get("user-agent") ?? "";
+  const isMobile = /android|iphone|ipad|ipod|mobile/i.test(userAgent);
 
   if (rankings === null) {
     return (
@@ -179,10 +177,6 @@ export default async function RankingsPage() {
     .sort((a, b) => b.ratio - a.ratio)
     .slice(0, 5);
 
-  const bottomFive = [...rankings]
-    .sort((a, b) => a.ratio - b.ratio)
-    .slice(0, 5);
-
   return (
     <div className="min-h-screen bg-[#fdfcfc] flex flex-col">
       <header className="bg-[#8c1d0a] text-white py-6 text-center">
@@ -192,7 +186,7 @@ export default async function RankingsPage() {
         <div className="max-w-5xl mx-auto">
 
           <div className="flex justify-center w-full">
-            <RankingColumn title="The most CTOs" data={topFive} />
+            <RankingColumn title="The most CTOs" data={topFive} isMobile={isMobile} />
           </div>
 
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
