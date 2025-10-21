@@ -78,13 +78,6 @@ function getMatchupsByPercentile(people: Person[]): Person[] {
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("API route called - Environment check:", {
-      hasEndpoint: !!process.env.COSMOS_DB_ENDPOINT,
-      hasKey: !!process.env.COSMOS_DB_KEY,
-      databaseId: process.env.COSMOS_DB_DATABASE_ID,
-      containerId: process.env.COSMOS_DB_CONTAINER_ID
-    });
-
     const searchParams = request.nextUrl.searchParams;
     const isFirstVisit = searchParams.get("firstVisit") === "true";
     let location = searchParams.get("location") || "random";

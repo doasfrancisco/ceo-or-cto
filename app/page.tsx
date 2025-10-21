@@ -1,14 +1,23 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import { ComparisonPair, Person } from "@/lib/types";
 import { analytics } from "@/lib/mixpanel";
+import { FIRST_COMPARISON } from "@/lib/firstVisit";
+
+const CACHE_VERSION = "v1";
+const getCacheKey = (cat: string) => `comparisonCache:${CACHE_VERSION}:${cat}`;
+
+type CachedComparisonPayload = {
+  timestamp: number;
+  data: ComparisonPair;
+};
 
 export default function Home() {
   const [comparison, setComparison] = useState<ComparisonPair | null>(null);
   const [loading, setLoading] = useState(true);
-  const [category, setCategory] = useState("random");
+  const [category] = useState("random");
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
@@ -21,87 +30,312 @@ export default function Home() {
   // Cache matchups and track current pair index
   const matchupsRef = useRef<Person[] | null>(null);
   const currentPairIndexRef = useRef<number>(0);
+  const preloadedImagesRef = useRef<Set<string>>(new Set());
+  const prefetchedComparisonRef = useRef<ComparisonPair | null>(null);
+  const prefetchInFlightRef = useRef(false);
+  const prefetchAbortControllerRef = useRef<AbortController | null>(null);
+  const prefetchPromiseRef = useRef<Promise<void> | null>(null);
 
-  const isFirstVisit = () => {
+  const readComparisonFromCache = useCallback((cat: string): ComparisonPair | null => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem(getCacheKey(cat));
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as CachedComparisonPayload;
+      if (!parsed?.data?.person1 || !parsed?.data?.person2) {
+        return null;
+      }
+      return parsed.data;
+    } catch (error) {
+      console.warn("Failed to read cached comparison:", error);
+      localStorage.removeItem(getCacheKey(cat));
+      return null;
+    }
+  }, []);
+
+  const writeComparisonToCache = useCallback((cat: string, data: ComparisonPair) => {
+    if (typeof window === "undefined") return;
+    try {
+      const payload: CachedComparisonPayload = {
+        timestamp: Date.now(),
+        data,
+      };
+      localStorage.setItem(getCacheKey(cat), JSON.stringify(payload));
+    } catch (error) {
+      console.warn("Failed to cache comparison data:", error);
+    }
+  }, []);
+
+  const markFirstVisitComplete = useCallback(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("hasVisited", "true");
+    analytics.trackFirstVisit();
+  }, []);
+
+  const preloadImage = (url?: string | null) => {
+    if (!url || typeof window === "undefined") return;
+    if (preloadedImagesRef.current.has(url)) return;
+
+    const img = new window.Image();
+    img.src = url;
+    preloadedImagesRef.current.add(url);
+  };
+
+  const preloadPersonImages = useCallback((people: Person[]) => {
+    if (!people || people.length === 0) return;
+    people.forEach(person => {
+      preloadImage(person.imageUrl);
+      preloadImage(person.easterImageUrl ?? null);
+    });
+  }, []);
+
+  const prefetchNextBatch = useCallback((cat: string = category) => {
+    if (prefetchInFlightRef.current || prefetchedComparisonRef.current) return;
+
+    if (prefetchAbortControllerRef.current) {
+      prefetchAbortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    prefetchAbortControllerRef.current = controller;
+    prefetchInFlightRef.current = true;
+
+    const promise = fetch(
+      `/api/comparison?firstVisit=false&location=${cat}`,
+      {
+        cache: "no-store",
+        signal: controller.signal,
+      }
+    )
+      .then(async response => {
+        const data: ComparisonPair = await response.json();
+
+        if (!controller.signal.aborted) {
+          const normalizedData: ComparisonPair = {
+            ...data,
+            isFirstVisit: false,
+          };
+
+          prefetchedComparisonRef.current = normalizedData;
+          writeComparisonToCache(cat, normalizedData);
+
+          if (normalizedData.matchups) {
+            preloadPersonImages(normalizedData.matchups);
+          }
+          preloadPersonImages([normalizedData.person1, normalizedData.person2]);
+        }
+      })
+      .catch(error => {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
+        console.error("Prefetch comparison failed:", error);
+      })
+      .finally(() => {
+        if (prefetchAbortControllerRef.current === controller) {
+          prefetchInFlightRef.current = false;
+          prefetchAbortControllerRef.current = null;
+        }
+      });
+
+    prefetchPromiseRef.current = promise;
+    return promise;
+  }, [category, preloadPersonImages, writeComparisonToCache]);
+
+  const maybePrefetchNextBatch = useCallback((cat: string = category) => {
+    if (!matchupsRef.current || prefetchedComparisonRef.current || prefetchInFlightRef.current) {
+      return;
+    }
+
+    const totalPairs = Math.floor(matchupsRef.current.length / 2);
+    const shownPairs = currentPairIndexRef.current;
+    const remainingPairs = totalPairs - shownPairs;
+
+    if (remainingPairs <= 2) {
+      prefetchNextBatch(cat);
+    }
+  }, [category, prefetchNextBatch]);
+
+  const applyComparison = useCallback((
+    data: ComparisonPair,
+    cat: string,
+    options: { firstVisit: boolean }
+  ) => {
+    if (data.matchups) {
+      matchupsRef.current = data.matchups;
+      currentPairIndexRef.current = 1;
+      preloadPersonImages(data.matchups);
+    } else {
+      matchupsRef.current = null;
+      currentPairIndexRef.current = 0;
+    }
+
+    preloadPersonImages([data.person1, data.person2]);
+    setComparison({
+      ...data,
+      isFirstVisit: options.firstVisit,
+    });
+
+    analytics.trackComparisonView({
+      person1Id: data.person1.id,
+      person1Name: data.person1.name,
+      person1Role: data.person1.role || "",
+      person2Id: data.person2.id,
+      person2Name: data.person2.name,
+      person2Role: data.person2.role || "",
+      category: cat,
+      isFirstVisit: options.firstVisit,
+    });
+
+    maybePrefetchNextBatch(cat);
+  }, [maybePrefetchNextBatch, preloadPersonImages]);
+
+  const isFirstVisit = useCallback(() => {
     if (typeof window === "undefined") return true;
     const hasVisited = localStorage.getItem("hasVisited");
     return !hasVisited;
-  };
+  }, []);
 
-  const fetchNewMatchups = async (cat: string = category) => {
+  const fetchNewMatchups = useCallback(async (cat: string = category) => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
 
+    prefetchedComparisonRef.current = null;
+    prefetchPromiseRef.current = null;
+    if (prefetchAbortControllerRef.current) {
+      prefetchAbortControllerRef.current.abort();
+      prefetchAbortControllerRef.current = null;
+    }
+    prefetchInFlightRef.current = false;
+
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
-    setLoading(true);
+    const firstVisit = isFirstVisit();
+    let servedFromCache = false;
+
+    let cachedComparison = readComparisonFromCache(cat);
+    if (!cachedComparison && firstVisit) {
+      cachedComparison = FIRST_COMPARISON;
+      writeComparisonToCache(cat, FIRST_COMPARISON);
+    }
+
+    if (cachedComparison) {
+      servedFromCache = true;
+      setLoading(false);
+      applyComparison(cachedComparison, cat, { firstVisit: cachedComparison.isFirstVisit });
+      if (firstVisit) {
+        markFirstVisitComplete();
+      }
+    } else {
+      setLoading(true);
+    }
+
     try {
-      const firstVisit = isFirstVisit();
+      const shouldRequestFirstVisit = firstVisit && !servedFromCache;
       const response = await fetch(
-        `/api/comparison?firstVisit=${firstVisit}&location=${cat}`,
+        `/api/comparison?firstVisit=${shouldRequestFirstVisit}&location=${cat}`,
         {
-          cache: 'no-store',
-          signal: abortController.signal
+          cache: "no-store",
+          signal: abortController.signal,
         }
       );
 
       const data: ComparisonPair = await response.json();
-
-      if (!abortController.signal.aborted) {
-        // Cache the matchups and increment index since we're showing the first pair
-        if (data.matchups) {
-          matchupsRef.current = data.matchups;
-          currentPairIndexRef.current = 1; // Start at 1 since we're already showing pair 0
-        }
-
-        setComparison(data);
-
-        if (firstVisit) {
-          localStorage.setItem("hasVisited", "true");
-          analytics.trackFirstVisit();
-        }
-
-        // Track comparison view
-        analytics.trackComparisonView({
-          person1Id: data.person1.id,
-          person1Name: data.person1.name,
-          person1Role: data.person1.role || '',
-          person2Id: data.person2.id,
-          person2Name: data.person2.name,
-          person2Role: data.person2.role || '',
-          category: cat,
-          isFirstVisit: firstVisit,
-        });
-      }
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
+      if (abortController.signal.aborted) {
         return;
       }
-    } finally {
-      // Only clear loading if this request wasn't aborted
-      if (!abortController.signal.aborted) {
+
+      const normalizedData: ComparisonPair = {
+        ...data,
+        isFirstVisit: false,
+      };
+
+      writeComparisonToCache(cat, normalizedData);
+
+      if (!servedFromCache) {
+        if (shouldRequestFirstVisit) {
+          markFirstVisitComplete();
+        }
+        applyComparison(normalizedData, cat, { firstVisit: shouldRequestFirstVisit });
+        setLoading(false);
+      } else {
+        prefetchedComparisonRef.current = normalizedData;
+        if (normalizedData.matchups) {
+          preloadPersonImages(normalizedData.matchups);
+        }
+        preloadPersonImages([normalizedData.person1, normalizedData.person2]);
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        return;
+      }
+      console.error("Failed to fetch comparison:", error);
+      if (!servedFromCache && !abortController.signal.aborted) {
         setLoading(false);
       }
     }
-  };
+  }, [
+    applyComparison,
+    category,
+    isFirstVisit,
+    markFirstVisitComplete,
+    preloadPersonImages,
+    readComparisonFromCache,
+    writeComparisonToCache,
+  ]);
 
   const updateStatsAndFetchNew = async () => {
-    // Update stats in DB before fetching new matchups
-    if (matchupsRef.current) {
-      try {
-        await fetch('/api/comparison', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ people: matchupsRef.current }),
-        });
-      } catch (error) {
+    const peopleToUpdate = matchupsRef.current
+      ? matchupsRef.current.map(person => ({ ...person }))
+      : null;
+
+    // Reset current cache before fetching new data
+    matchupsRef.current = null;
+    currentPairIndexRef.current = 0;
+
+    if (peopleToUpdate) {
+      fetch('/api/comparison', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ people: peopleToUpdate }),
+      }).catch(error => {
         console.error('Failed to update stats:', error);
+      });
+    }
+
+    const consumePrefetchedComparison = () => {
+      const prefetched = prefetchedComparisonRef.current;
+      if (!prefetched) return false;
+
+      prefetchedComparisonRef.current = null;
+      prefetchPromiseRef.current = null;
+      setLoading(false);
+      applyComparison(prefetched, category, { firstVisit: false });
+      return true;
+    };
+
+    if (consumePrefetchedComparison()) {
+      return;
+    }
+
+    if (prefetchPromiseRef.current) {
+      try {
+        await prefetchPromiseRef.current;
+      } catch (error) {
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('Prefetch resolution failed:', error);
+        }
+      } finally {
+        prefetchPromiseRef.current = null;
       }
     }
 
-    // Fetch new matchups
+    if (consumePrefetchedComparison()) {
+      return;
+    }
+
     fetchNewMatchups();
   };
 
@@ -148,11 +382,13 @@ export default function Home() {
       category,
       isFirstVisit: false,
     });
+
+    maybePrefetchNextBatch(category);
   };
 
   useEffect(() => {
     fetchNewMatchups();
-  }, []);
+  }, [fetchNewMatchups]);
 
   const handleSelect = (personId: string) => {
     // Start music on first click
@@ -214,15 +450,6 @@ export default function Home() {
         showNextPair();
       }, 2000);
     }
-  };
-
-  const handleCategoryChange = (newCategory: string) => {
-    setCategory(newCategory);
-    analytics.trackCategoryChange(newCategory);
-    // Reset cache when category changes
-    matchupsRef.current = null;
-    currentPairIndexRef.current = 0;
-    fetchNewMatchups(newCategory);
   };
 
   return (
@@ -322,7 +549,7 @@ export default function Home() {
           {showResult && selectedPerson && otherPerson && comparison && (
             <div className="text-center mt-4">
               <p className={`text-2xl font-bold mb-2 ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-                {isCorrect ? 'Good Job!' : 'Oops! Wrong Choice'}
+                {isCorrect ? 'Correct!' : 'Wrong'}
               </p>
               <div className="flex gap-4 justify-center text-sm">
                 <a
@@ -435,3 +662,4 @@ export default function Home() {
     </div>
   );
 }
+
