@@ -493,7 +493,9 @@ export default function Home() {
             <span className="md:ml-2">Will we be judged on them? Yes.</span>
           </p>
           <p className="text-2xl md:text-4xl font-bold text-black mt-4">
-            Who&apos;s the CTO? Click to Choose.
+            Who&apos;s the CTO?
+            <br className="block md:hidden" />
+            <span className="md:ml-2">Click to Choose.</span>
           </p>
         </div>
 
