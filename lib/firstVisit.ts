@@ -1,7 +1,7 @@
 import { ComparisonPair, Person } from "./types";
 
 const francisco: Person = {
-  id: "yo",
+  id: "doasfrancisco",
   name: "Francisco Dominguez",
   company: "Maxilar",
   role: "CEO",
@@ -16,7 +16,7 @@ const francisco: Person = {
 };
 
 const matias: Person = {
-  id: "mati",
+  id: "matiasavenda222",
   name: "Matias Avendaño",
   company: "Maxilar",
   role: "CTO",

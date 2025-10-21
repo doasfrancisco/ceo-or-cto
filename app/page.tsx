@@ -87,11 +87,11 @@ export default function Home() {
     const lines: string[] = [];
 
     if (isMobileDevice) {
-      lines.push(`@doasfrancisco @${person.id} eres el ${roleText} en el juegoCEO or CTO! `);
-      lines.push(person.linkedInUrl);
+      lines.push(`@doasfrancisco @${person.id} eres el ${roleText} en CEO or CTO `);
+      lines.push(`https://www.linkedin.com/in/${person.id}/`);
 
       const mobileEncoded = encodeURIComponent(lines.join("\n"));
-      const mobileShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${mobileEncoded}&title=HOLA`;
+      const mobileShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${mobileEncoded}`;
       return mobileShareUrl;
 
     } else {
@@ -248,6 +248,10 @@ export default function Home() {
     let servedFromCache = false;
 
     let cachedComparison = readComparisonFromCache(cat);
+    if (firstVisit && cachedComparison && cachedComparison.isFirstVisit !== true) {
+      // Ignore stale cache entries from previous sessions when forcing the intro matchup.
+      cachedComparison = null;
+    }
     if (!cachedComparison && firstVisit) {
       const baseFirstVisit = { ...FIRST_COMPARISON };
       const randomizedFirstVisit =
