@@ -1,8 +1,33 @@
 import mixpanel from 'mixpanel-browser';
 
 const MIXPANEL_TOKEN = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
+const isBrowser = typeof window !== 'undefined';
+const DISTINCT_ID_STORAGE_KEY = 'ceo-or-cto:distinct_id';
 
-if (MIXPANEL_TOKEN) {
+const ensureDistinctId = () => {
+  if (!isBrowser) return;
+  if (!MIXPANEL_TOKEN) return;
+
+  const generateId = () => {
+    if (typeof window.crypto !== 'undefined' && typeof window.crypto.randomUUID === 'function') {
+      return window.crypto.randomUUID();
+    }
+    return `anon_${Math.random().toString(36).slice(2, 11)}${Date.now()}`;
+  };
+
+  try {
+    let distinctId = window.localStorage.getItem(DISTINCT_ID_STORAGE_KEY);
+    if (!distinctId) {
+      distinctId = generateId();
+      window.localStorage.setItem(DISTINCT_ID_STORAGE_KEY, distinctId);
+    }
+    mixpanel.identify(distinctId);
+  } catch (error) {
+    console.warn('Failed to initialize analytics identity:', error);
+  }
+};
+
+if (MIXPANEL_TOKEN && isBrowser) {
   mixpanel.init(MIXPANEL_TOKEN, {
     debug: true,
     track_pageview: true,
@@ -10,14 +35,17 @@ if (MIXPANEL_TOKEN) {
     record_sessions_percent: 100,
     record_heatmap_data: true,
     ignore_dnt: true,
-    api_host: process.env.NEXT_PUBLIC_PROXY_MIXPANEL_API
+    api_host: process.env.NEXT_PUBLIC_PROXY_MIXPANEL_API,
   });
-} else {
+
+  ensureDistinctId();
+} else if (!MIXPANEL_TOKEN) {
   console.warn('Mixpanel token not found. Analytics will not be tracked.');
 }
 
 export const analytics = {
-  // Track when a user selects a person
+  ensureIdentity: ensureDistinctId,
+
   trackSelection: (data: {
     selectedPersonId: string;
     selectedPersonName: string;
@@ -28,25 +56,17 @@ export const analytics = {
     category: string;
   }) => {
     if (!MIXPANEL_TOKEN) return;
-
-    try {
-      mixpanel.track('Person Selected', {
-        selected_person_id: data.selectedPersonId,
-        selected_person_name: data.selectedPersonName,
-        selected_person_role: data.selectedPersonRole,
-        other_person_id: data.otherPersonId,
-        other_person_name: data.otherPersonName,
-        other_person_role: data.otherPersonRole,
-        category: data.category,
-      });
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Analytics tracking failed (this is normal in localhost)');
-      }
-    }
+    mixpanel.track('Person Selected', {
+      selected_person_id: data.selectedPersonId,
+      selected_person_name: data.selectedPersonName,
+      selected_person_role: data.selectedPersonRole,
+      other_person_id: data.otherPersonId,
+      other_person_name: data.otherPersonName,
+      other_person_role: data.otherPersonRole,
+      category: data.category,
+    });
   },
 
-  // Track when a comparison pair is shown to the user
   trackComparisonView: (data: {
     person1Id: string;
     person1Name: string;
@@ -58,51 +78,26 @@ export const analytics = {
     isFirstVisit: boolean;
   }) => {
     if (!MIXPANEL_TOKEN) return;
-
-    try {
-      mixpanel.track('Comparison Viewed', {
-        person1_id: data.person1Id,
-        person1_name: data.person1Name,
-        person1_role: data.person1Role,
-        person2_id: data.person2Id,
-        person2_name: data.person2Name,
-        person2_role: data.person2Role,
-        category: data.category,
-        is_first_visit: data.isFirstVisit,
-      });
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Analytics tracking failed (this is normal in localhost)');
-      }
-    }
+    mixpanel.track('Comparison Viewed', {
+      person1_id: data.person1Id,
+      person1_name: data.person1Name,
+      person1_role: data.person1Role,
+      person2_id: data.person2Id,
+      person2_name: data.person2Name,
+      person2_role: data.person2Role,
+      category: data.category,
+      is_first_visit: data.isFirstVisit,
+    });
   },
 
-  // Track category changes
   trackCategoryChange: (category: string) => {
     if (!MIXPANEL_TOKEN) return;
-
-    try {
-      mixpanel.track('Category Changed', {
-        category,
-      });
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Analytics tracking failed (this is normal in localhost)');
-      }
-    }
+    mixpanel.track('Category Changed', { category });
   },
 
-  // Track first visit
   trackFirstVisit: () => {
     if (!MIXPANEL_TOKEN) return;
-
-    try {
-      mixpanel.track('First Visit');
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Analytics tracking failed (this is normal in localhost)');
-      }
-    }
+    mixpanel.track('First Visit');
   },
 };
 

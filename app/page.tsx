@@ -36,6 +36,10 @@ export default function Home() {
   const prefetchAbortControllerRef = useRef<AbortController | null>(null);
   const prefetchPromiseRef = useRef<Promise<void> | null>(null);
 
+  useEffect(() => {
+    analytics.ensureIdentity();
+  }, []);
+
   const readComparisonFromCache = useCallback((cat: string): ComparisonPair | null => {
     if (typeof window === "undefined") return null;
     try {
