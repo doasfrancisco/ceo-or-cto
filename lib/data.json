@@ -8,7 +8,8 @@
     "imageUrl": "https://ceoorcto.blob.core.windows.net/ceoorcto/ceos/yo.jpeg",
     "location": "Peru",
     "total": 1,
-    "sr": 1
+    "sr": 1,
+    "linkedInUrl": "https://www.linkedin.com/in/doasfrancisco"
   },
   {
     "id": "mati",
@@ -19,7 +20,8 @@
     "imageUrl": "https://ceoorcto.blob.core.windows.net/ceoorcto/ctos/mati.jpeg",
     "location": "Peru",
     "total": 1,
-    "sr": 1
+    "sr": 1,
+    "linkedInUrl": "https://www.linkedin.com/in/matiasavenda222/"
   },
   {
     "id": "diego",
@@ -30,7 +32,8 @@
     "imageUrl": "https://ceoorcto.blob.core.windows.net/ceoorcto/ceos/diego.jpeg",
     "location": "Peru",
     "total": 1,
-    "sr": 1
+    "sr": 1,
+    "linkedInUrl": "https://www.linkedin.com/in/diego-sebastian-salazar-cervantes-54b27aa9/"
   },
   {
     "id": "miguel_huaman",
@@ -39,9 +42,10 @@
     "role": "CTO",
     "type": "probably_uses_glasses",
     "location": "Peru",
+    "imageUrl": "https://ceoorcto.blob.core.windows.net/ceoorcto/ctos/miguel_huaman.jpg",
     "total": 1,
     "sr": 1,
-    "imageUrl": "https://ceoorcto.blob.core.windows.net/ceoorcto/ctos/miguel_huaman.jpg",
+    "linkedInUrl": "https://www.linkedin.com/in/khuaman/",
     "easterImageUrl": "https://ceoorcto.blob.core.windows.net/ceoorcto/ctos/baby_huaman.png"
   }
 ]

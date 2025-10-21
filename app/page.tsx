@@ -84,9 +84,7 @@ export default function Home() {
   };
 
   const showNextPair = () => {
-    // Check if we have cached matchups
     if (!matchupsRef.current || currentPairIndexRef.current >= 5) {
-      // Need to fetch new matchups
       fetchNewMatchups();
       return;
     }
@@ -218,10 +216,10 @@ export default function Home() {
                     fill
                     className="object-cover"
                   />
-                  <div className="absolute bottom-0 left-0 bg-black/50 text-white text-xs p-1">
+                  {/* <div className="absolute bottom-0 left-0 bg-black/50 text-white text-xs p-1">
                     {comparison.person1.name}
                     {comparison.person1.imageUrl}
-                  </div>
+                  </div> */}
                 </div>
               </button>
 
@@ -240,10 +238,10 @@ export default function Home() {
                     fill
                     className="object-cover"
                   />
-                  <div className="absolute bottom-0 left-0 bg-black/50 text-white text-xs p-1">
+                  {/* <div className="absolute bottom-0 left-0 bg-black/50 text-white text-xs p-1">
                     {comparison.person2.name}
                     {comparison.person2.imageUrl}
-                  </div>
+                  </div> */}
                 </div>
               </button>
             </>

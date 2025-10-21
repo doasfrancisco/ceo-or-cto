@@ -8,11 +8,14 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 interface Person {
   id: string;
   name: string;
-  company?: string;
-  role?: string;
+  company: string;
+  role: string;
   type: "forced_to_socialize" | "probably_uses_glasses";
   imageUrl: string;
   location: string;
+  total: BigInt;
+  sr: BigInt;
+  linkedInUrl: string;
   easterImageUrl?: string;
 }
 
@@ -86,14 +89,7 @@ function cleanCSVAndConvertToJSON(type: string = 'ceo') {
   const dataLines = lines.slice(1);
 
   const people: Person[] = dataLines.map((line, index) => {
-    const [linkedInId, profileUrl, description] = parseCSVLine(line);
-
-    if (!linkedInId || !description) {
-      return null;
-    }
-
-    const name = linkedInIdToName(linkedInId);
-    const company = extractCompanyFromDescription(description);
+    const [linkedInId, name, company, profileUrl] = parseCSVLine(line);
 
     return {
       id: linkedInId,
@@ -103,6 +99,9 @@ function cleanCSVAndConvertToJSON(type: string = 'ceo') {
       type:  lowerType === 'ceo' ? 'forced_to_socialize' : 'probably_uses_glasses',
       imageUrl: `${blobBaseUrl}/${type}s/${linkedInId}.jpg`,
       location: 'Peru',
+      total: 1,
+      sr: 1,
+      linkedInUrl: profileUrl,
     };
   }).filter((person): person is Person => person !== null);
 
@@ -116,4 +115,4 @@ function cleanCSVAndConvertToJSON(type: string = 'ceo') {
 }
 
 // Run the script
-cleanCSVAndConvertToJSON('cto');
+cleanCSVAndConvertToJSON('ceo');
