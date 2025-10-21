@@ -177,16 +177,20 @@ export default function Home() {
 
       if (matchupsRef.current) {
         matchupsRef.current = matchupsRef.current.map(person => {
+          // if (!person.total_temp || !person.SR_temp) {
+          //   person.total_temp = 0;
+          //   person.SR_temp = 0;
+          // }
           if (person.id === selected.id) {
             return {
               ...person,
-              total_temp: person.total_temp + 1,
-              SR_temp: person.SR_temp + 1,
+              total_temp: person.total_temp! + 1,
+              SR_temp: person.SR_temp! + 1,
             };
           } else if (person.id === other.id) {
             return {
               ...person,
-              total_temp: person.total_temp + 1,
+              total_temp: person.total_temp! + 1,
             };
           }
           return person;
