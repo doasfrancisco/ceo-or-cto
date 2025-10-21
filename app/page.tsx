@@ -436,6 +436,10 @@ export default function Home() {
   }, [fetchNewMatchups]);
 
   const handleSelect = (personId: string) => {
+    if (showResult || !comparison) {
+      return;
+    }
+
     // Start music on first click
     if (!musicStartedRef.current && audioRef.current) {
       audioRef.current.volume = 0.2;
@@ -446,55 +450,53 @@ export default function Home() {
     }
 
     // Track selection event and update temp stats
-    if (comparison) {
-      const selected = comparison.person1.id === personId ? comparison.person1 : comparison.person2;
-      const other = comparison.person1.id === personId ? comparison.person2 : comparison.person1;
+    const selected = comparison.person1.id === personId ? comparison.person1 : comparison.person2;
+    const other = comparison.person1.id === personId ? comparison.person2 : comparison.person1;
 
-      const correct = selected.role === 'CTO';
-      setIsCorrect(correct);
-      setSelectedPerson(selected);
-      setOtherPerson(other);
-      setShowResult(true);
+    const correct = selected.role === 'CTO';
+    setIsCorrect(correct);
+    setSelectedPerson(selected);
+    setOtherPerson(other);
+    setShowResult(true);
 
-      if (matchupsRef.current) {
-        matchupsRef.current = matchupsRef.current.map(person => {
-          // if (!person.total_temp || !person.SR_temp) {
-          //   person.total_temp = 0;
-          //   person.SR_temp = 0;
-          // }
-          if (person.id === selected.id) {
-            return {
-              ...person,
-              total_temp: person.total_temp! + 1,
-              SR_temp: person.SR_temp! + 1,
-            };
-          } else if (person.id === other.id) {
-            return {
-              ...person,
-              total_temp: person.total_temp! + 1,
-            };
-          }
-          return person;
-        });
-      }
-
-      analytics.trackSelection({
-        selectedPersonId: selected.id,
-        selectedPersonName: selected.name,
-        selectedPersonRole: selected.role || '',
-        otherPersonId: other.id,
-        otherPersonName: other.name,
-        otherPersonRole: other.role || '',
-        category,
+    if (matchupsRef.current) {
+      matchupsRef.current = matchupsRef.current.map(person => {
+        // if (!person.total_temp || !person.SR_temp) {
+        //   person.total_temp = 0;
+        //   person.SR_temp = 0;
+        // }
+        if (person.id === selected.id) {
+          return {
+            ...person,
+            total_temp: person.total_temp! + 1,
+            SR_temp: person.SR_temp! + 1,
+          };
+        } else if (person.id === other.id) {
+          return {
+            ...person,
+            total_temp: person.total_temp! + 1,
+          };
+        }
+        return person;
       });
-
-      // Auto-advance after 2 seconds
-      setTimeout(() => {
-        setShowResult(false);
-        setComparison(null);
-        showNextPair();
-      }, 2000);
     }
+
+    analytics.trackSelection({
+      selectedPersonId: selected.id,
+      selectedPersonName: selected.name,
+      selectedPersonRole: selected.role || '',
+      otherPersonId: other.id,
+      otherPersonName: other.name,
+      otherPersonRole: other.role || '',
+      category,
+    });
+
+    // Auto-advance after 2 seconds
+    setTimeout(() => {
+      setShowResult(false);
+      setComparison(null);
+      showNextPair();
+    }, 2000);
   };
 
   return (
@@ -544,6 +546,7 @@ export default function Home() {
                 <button
                   className="group cursor-pointer"
                   onClick={() => handleSelect(comparison.person1.id)}
+                  disabled={showResult}
                 >
                   <div className={`w-36 h-56 md:w-60 md:h-80 border-4 transition-colors overflow-hidden relative ${
                     showResult
@@ -570,6 +573,7 @@ export default function Home() {
                 <button
                   className="group cursor-pointer"
                   onClick={() => handleSelect(comparison.person2.id)}
+                  disabled={showResult}
                 >
                   <div className={`w-36 h-56 md:w-60 md:h-80 border-4 transition-colors overflow-hidden relative ${
                     showResult
