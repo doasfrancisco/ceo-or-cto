@@ -103,7 +103,16 @@ export async function GET(request: NextRequest) {
     }
 
     if (isFirstVisit) {
-      return NextResponse.json(FIRST_COMPARISON);
+      const firstVisit = { ...FIRST_COMPARISON };
+      if (Math.random() < 0.5) {
+        const swapped = {
+          ...firstVisit,
+          person1: firstVisit.person2,
+          person2: firstVisit.person1,
+        };
+        return NextResponse.json(swapped);
+      }
+      return NextResponse.json(firstVisit);
     }
 
     let people: Person[];
@@ -114,18 +123,20 @@ export async function GET(request: NextRequest) {
     }
 
     const matchups = getMatchupsByPercentile(people);
+    for (let i = 0; i < matchups.length; i += 2) {
+      if (i + 1 < matchups.length && Math.random() < 0.5) {
+        const temp = matchups[i];
+        matchups[i] = matchups[i + 1];
+        matchups[i + 1] = temp;
+      }
+    }
 
-    const person1 = matchups[0];
-    const person2 = matchups[1];
-
-    const response: ComparisonPair = {
-      person1,
-      person2,
+    return NextResponse.json({
+      person1: matchups[0],
+      person2: matchups[1],
       isFirstVisit,
       matchups,
-    };
-
-    return NextResponse.json(response);
+    } satisfies ComparisonPair);
   } catch (error) {
     console.error("Error in comparison API:", error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

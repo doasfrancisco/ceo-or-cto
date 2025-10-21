@@ -217,8 +217,17 @@ export default function Home() {
 
     let cachedComparison = readComparisonFromCache(cat);
     if (!cachedComparison && firstVisit) {
-      cachedComparison = FIRST_COMPARISON;
-      writeComparisonToCache(cat, FIRST_COMPARISON);
+      const baseFirstVisit = { ...FIRST_COMPARISON };
+      const randomizedFirstVisit =
+        Math.random() < 0.5
+          ? {
+              ...baseFirstVisit,
+              person1: baseFirstVisit.person2,
+              person2: baseFirstVisit.person1,
+            }
+          : baseFirstVisit;
+      cachedComparison = randomizedFirstVisit;
+      writeComparisonToCache(cat, randomizedFirstVisit);
     }
 
     if (cachedComparison) {
