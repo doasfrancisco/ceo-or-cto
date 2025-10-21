@@ -487,9 +487,11 @@ export default function Home() {
         {/* Tagline */}
         <div className="text-center mb-8">
           <p className="text-lg md:text-2xl font-bold text-black mb-12">
-            Were we CTO for our looks? No. Will we be judged on them? Yes.
+            Were we CTO for our looks? No.
+            <br className="block md:hidden" />
+            <span className="md:ml-2">Will we be judged on them? Yes.</span>
           </p>
-          <p className="text-xl md:text-4xl font-bold text-black mt-4">
+          <p className="text-2xl md:text-4xl font-bold text-black mt-4">
             Who&apos;s the CTO? Click to Choose.
           </p>
         </div>
@@ -500,9 +502,9 @@ export default function Home() {
             {loading || !comparison ? (
               <>
                 {/* Loading placeholders */}
-                <div className="w-48 h-64 md:w-60 md:h-80 bg-[#8c1d0a] border-4 animate-pulse" />
+                <div className="w-36 h-56 md:w-60 md:h-80 bg-[#8c1d0a] border-4 animate-pulse" />
                 <div className="text-2xl md:text-3xl text-black">OR</div>
-                <div className="w-48 h-64 md:w-60 md:h-80 bg-[#8c1d0a] border-4 animate-pulse" />
+                <div className="w-36 h-56 md:w-60 md:h-80 bg-[#8c1d0a] border-4 animate-pulse" />
               </>
             ) : (
               <>
@@ -511,7 +513,7 @@ export default function Home() {
                   className="group cursor-pointer"
                   onClick={() => handleSelect(comparison.person1.id)}
                 >
-                  <div className={`w-48 h-64 md:w-60 md:h-80 border-4 transition-colors overflow-hidden relative ${
+                  <div className={`w-36 h-56 md:w-60 md:h-80 border-4 transition-colors overflow-hidden relative ${
                     showResult
                       ? (selectedPerson?.id === comparison.person1.id && isCorrect)
                         ? 'border-green-500 border-8'
@@ -537,7 +539,7 @@ export default function Home() {
                   className="group cursor-pointer"
                   onClick={() => handleSelect(comparison.person2.id)}
                 >
-                  <div className={`w-48 h-64 md:w-60 md:h-80 border-4 transition-colors overflow-hidden relative ${
+                  <div className={`w-36 h-56 md:w-60 md:h-80 border-4 transition-colors overflow-hidden relative ${
                     showResult
                       ? (selectedPerson?.id === comparison.person2.id && isCorrect)
                         ? 'border-green-500 border-8'
@@ -559,32 +561,36 @@ export default function Home() {
           </div>
 
           {/* Result Display */}
-          {showResult && selectedPerson && otherPerson && comparison && (
-            <div className="text-center mt-4">
-              <p className={`text-2xl font-bold mb-2 ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-                {isCorrect ? 'Correct!' : 'Wrong'}
-              </p>
-              <div className="flex gap-4 justify-center text-sm">
-                <a
-                  href={comparison.person1.linkedInUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  {comparison.person1.name} ({comparison.person1.role})
-                </a>
-                <span>vs</span>
-                <a
-                  href={comparison.person2.linkedInUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  {comparison.person2.name} ({comparison.person2.role})
-                </a>
+          <div className="w-full mt-4 min-h-[160px] md:min-h-[90px] flex flex-col items-center justify-center">
+            {showResult && selectedPerson && otherPerson && comparison && (
+              <div className="text-center">
+                <p className={`text-2xl font-bold mb-2 ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                  {isCorrect ? 'Correct!' : 'Wrong'}
+                </p>
+                <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center justify-items-center gap-2 text-sm md:text-base w-full max-w-2xl mx-auto px-2">
+                  <a
+                    href={comparison.person1.linkedInUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full text-blue-600 hover:underline text-right whitespace-normal break-words leading-tight"
+                    title={`${comparison.person1.name} (${comparison.person1.role})`}
+                  >
+                    {comparison.person1.name} ({comparison.person1.role})
+                  </a>
+                  <span className="w-8 text-center font-semibold">vs</span>
+                  <a
+                    href={comparison.person2.linkedInUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full text-blue-600 hover:underline text-left whitespace-normal break-words leading-tight"
+                    title={`${comparison.person2.name} (${comparison.person2.role})`}
+                  >
+                    {comparison.person2.name} ({comparison.person2.role})
+                  </a>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Navigation Links */}
@@ -666,7 +672,7 @@ export default function Home() {
         </nav> */}
 
         {/* Footer Links */}
-        <footer className="flex gap-6 text-black font-bold">
+        <footer className="mt-6 md:mt-0 flex gap-6 text-black font-bold justify-center">
           <a href="#" className="hover:underline">About</a>
           <a href="#" className="hover:underline">Rankings</a>
           {/* <a href="#" className="hover:underline">Previous</a> */}
