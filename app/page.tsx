@@ -326,7 +326,7 @@ export default function Home() {
               </p>
               <div className="flex gap-4 justify-center text-sm">
                 <a
-                  href={comparison.person1.imageUrl}
+                  href={comparison.person1.linkedinUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:underline"
@@ -335,7 +335,7 @@ export default function Home() {
                 </a>
                 <span>vs</span>
                 <a
-                  href={comparison.person2.imageUrl}
+                  href={comparison.person2.linkedinUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:underline"
