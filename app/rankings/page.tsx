@@ -72,12 +72,14 @@ function RankingColumn({
   const createSharePostUrl = (person: Person, index: number) => {
     const shareLines: string[] = [];
     if (isMobile) {
-      shareLines.push(`@${person.id} you're ${index + 1}th on https://ceo-or-cto.com/. `);
-      shareLines.push(`LinkedIn: ${person.linkedInUrl}`);  
+      shareLines.push(`@doasfrancisco @${person.id} you're ${index + 1}th on CEO or CTO. `);
+      shareLines.push(`${person.linkedInUrl}`);  
       const encodedText = encodeURIComponent(shareLines.join("\n"));
-      return `https://www.linkedin.com/sharing/share-offsite/?url=${encodedText}`;
+      const mobileUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedText}`;
+      console.log("Mobile share URL:", mobileUrl);
+      return mobileUrl;
     }
-    
+
     shareLines.push(`@${person.id} you're ${index + 1}th on https://ceo-or-cto.com/`);
     shareLines.push(` `);
     shareLines.push(`LinkedIn: ${person.linkedInUrl}`);
