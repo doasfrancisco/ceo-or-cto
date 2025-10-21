@@ -78,21 +78,15 @@ export default function Home() {
   }, []);
 
   const createLinkedInShareUrl = useCallback((person: Person) => {
-    const gameUrl = "https://ceo-or-cto.com";
-    const roleText = person.role ? ` (${person.role})` : "";
-    // const lines: string[] = [
-    //   `I just played CEO OR CTO and guessed ${person.name}${roleText}!`,
-    // ];
+    const roleText = person.role ? `${person.role}` : "";
     const lines: string[] = [
-      `Test`,
+      `${person.name} eres el ${roleText} en https://ceo-or-cto.com!`
     ];
 
     if (person.linkedInUrl) {
       lines.push(` `);
-      lines.push(`Link: https://www.google.com/`);
+      lines.push(`LinkedIn: ${person.linkedInUrl}`);
     }
-
-    // lines.push(`Think you can guess? Play now: ${gameUrl}`);
 
     const encodedText = encodeURIComponent(lines.join("\n"));
 
@@ -602,9 +596,9 @@ export default function Home() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:underline whitespace-normal break-words leading-tight"
-                      title={`LinkedIn ${comparison.person1.name}`}
+                      title={`Share ${comparison.person1.name} on LinkedIn`}
                     >
-                      LinkedIn (Click here)
+                      LinkedIn (Click to tag)
                     </a>
                   </div>
                   <span className="w-10 text-center font-semibold">vs</span>
@@ -617,9 +611,9 @@ export default function Home() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:underline whitespace-normal break-words leading-tight"
-                      title={`LinkedIn ${comparison.person2.name}`}
+                      title={`Share ${comparison.person2.name} on LinkedIn`}
                     >
-                      LinkedIn (Click here)
+                      LinkedIn (Click to tag)
                     </a>
                   </div>
                 </div>
