@@ -548,14 +548,14 @@ export default function Home() {
               <h2 className="text-3xl md:text-4xl font-bold text-[#8c1d0a] mb-4">
                 Game Over!
               </h2>
-              <p className="text-lg md:text-xl text-gray-700 mb-2">
-                You got it wrong!
+              <p className="text-md text-gray-600 mb-2">
+                {score === 0 ? "Better luck next time!" : score === 1 ? "Not bad for a first try!" : score < 5 ? "Keep practicing!" : score < 10 ? "Pretty good!" : "Amazing streak!"}
               </p>
               <p className="text-4xl md:text-5xl font-bold text-black my-6">
                 Score: {score}
               </p>
-              <p className="text-md text-gray-600 mb-6">
-                {score === 0 ? "Better luck next time!" : score === 1 ? "Not bad for a first try!" : score < 5 ? "Keep practicing!" : score < 10 ? "Pretty good!" : "Amazing streak!"}
+              <p className="text-lg md:text-xl text-gray-700 mb-6">
+                Desafía y compártelo a tus amigos!
               </p>
               <button
                 onClick={handleReset}
@@ -575,7 +575,7 @@ export default function Home() {
             <span className="md:ml-2">Will we be judged on them? Yes.</span>
           </p>
           <p className="text-xl md:text-4xl font-bold text-black mt-4">
-            Who&apos;s the CTO? Click to Choose.
+            Who&apos;s the CTO? CLICK to choose.
           </p>
           {/* Score Display */}
           <div className="mt-6">
