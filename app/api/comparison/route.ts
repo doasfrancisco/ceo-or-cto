@@ -16,6 +16,25 @@ function applyEasterImage(person: Person): Person {
   };
 }
 
+function hasValidImage(person: Person | undefined | null): person is Person {
+  return Boolean(person && typeof person.imageUrl === "string" && person.imageUrl.length > 0);
+}
+
+function logMissingImage(context: string, person: Person | undefined | null) {
+  const id = person?.id ?? "unknown";
+  const name = person?.name ?? "unknown";
+  const type = person?.type ?? "unknown";
+  console.error(`[comparison] Missing imageUrl (${context})`, { id, name, type });
+}
+
+function logInvalidMatchups(matchups: Person[]) {
+  for (const candidate of matchups) {
+    if (!hasValidImage(candidate)) {
+      logMissingImage("matchup", candidate);
+    }
+  }
+}
+
 function getMatchupsByPercentile(people: Person[]): Person[] {
   const ceos = people.filter(p => p.type === "forced_to_socialize");
   const ctos = people.filter(p => p.type === "probably_uses_glasses");
@@ -123,6 +142,7 @@ export async function GET(request: NextRequest) {
     }
 
     const matchups = getMatchupsByPercentile(people);
+    logInvalidMatchups(matchups);
     for (let i = 0; i < matchups.length; i += 2) {
       if (i + 1 < matchups.length && Math.random() < 0.5) {
         const temp = matchups[i];
@@ -131,9 +151,14 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const [person1, person2] = matchups;
+    if (!person1 || !person2) {
+      throw new Error("Failed to assemble a comparison pair");
+    }
+
     return NextResponse.json({
-      person1: matchups[0],
-      person2: matchups[1],
+      person1,
+      person2,
       isFirstVisit,
       matchups,
     } satisfies ComparisonPair);

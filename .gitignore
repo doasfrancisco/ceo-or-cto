@@ -1,3 +1,5 @@
+new_competitors/
+addNewCompetitor.ts
 all_ceos/
 all_ctos/
 scripts/*.csv

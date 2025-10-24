@@ -113,9 +113,33 @@ export default function Home() {
     preloadedImagesRef.current.add(url);
   };
 
+  const reportMissingImage = useCallback((person: Person) => {
+    if (typeof window === "undefined") return;
+
+    try {
+      void fetch("/api/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reason: "missing-image-url",
+          timestamp: Date.now(),
+          person,
+        }),
+      }).catch(error => {
+        console.warn("Failed to report missing image:", error);
+      });
+    } catch (error) {
+      console.warn("Failed to report missing image:", error);
+    }
+  }, []);
+
   const preloadPersonImages = useCallback((people: Person[]) => {
     if (!people || people.length === 0) return;
     people.forEach(person => {
+      if (!person || !person.imageUrl) {
+        reportMissingImage(person);
+      }
+
       preloadImage(person.imageUrl);
       preloadImage(person.easterImageUrl ?? null);
     });
