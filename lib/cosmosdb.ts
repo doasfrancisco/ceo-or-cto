@@ -20,21 +20,24 @@ function getClient(): CosmosClient {
   return client;
 }
 
-export async function getAllPeople(): Promise<Person[]> {
+export async function getAllPeople(retries = 5, delay = 1000): Promise<Person[]> {
   try {
     const cosmosClient = getClient();
     const database = cosmosClient.database(databaseId);
     const container = database.container(containerId);
-
-    const { resources: people } = await container.items
-      .query("SELECT * FROM c")
-      .fetchAll();
-
-    return people as Person[];
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      const { resources: people } = await container.items
+        .query("SELECT * FROM c")
+        .fetchAll();
+      
+      if (people.length > 0) return people as Person[];
+      await new Promise(r => setTimeout(r, delay));
+    }
   } catch (error) {
     console.error("Error fetching people from CosmosDB:", error);
     throw error;
   }
+  throw new Error("Empty people list after retries");
 }
 
 export async function getPeopleByLocation(location: string): Promise<Person[]> {
