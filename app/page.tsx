@@ -538,7 +538,7 @@ export default function Home() {
         setShowResult(false);
         setComparison(null);
         showNextPair();
-      }, 2000);
+      }, 5000);
     } else {
       setTimeout(() => {
         setGameOver(true);
