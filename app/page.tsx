@@ -573,7 +573,7 @@ export default function Home() {
                 Game Over!
               </h2>
               <p className="text-md text-gray-600 mb-2">
-                {score === 0 ? "Better luck next time!" : score === 1 ? "Not bad for a first try!" : score < 5 ? "Keep practicing!" : score < 10 ? "Pretty good!" : "Amazing streak!"}
+                {score === 0 ? "Better luck next Vinayak!" : score === 1 ? "Not bad for a first try!" : score < 5 ? "Keep practicing!" : score < 10 ? "Pretty good!" : "Amazing streak!"}
               </p>
               <p className="text-4xl md:text-5xl font-bold text-black my-6">
                 Score: {score}
