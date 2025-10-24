@@ -24,6 +24,8 @@ export default function Home() {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [otherPerson, setOtherPerson] = useState<Person | null>(null);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [score, setScore] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -459,6 +461,19 @@ export default function Home() {
     fetchNewMatchups();
   }, [fetchNewMatchups]);
 
+  const handleReset = () => {
+    setScore(0);
+    setGameOver(false);
+    setShowResult(false);
+    setComparison(null);
+    setSelectedPerson(null);
+    setOtherPerson(null);
+    matchupsRef.current = null;
+    currentPairIndexRef.current = 0;
+    prefetchedComparisonRef.current = null;
+    fetchNewMatchups();
+  };
+
   const handleSelect = (personId: string) => {
     if (showResult || !comparison) {
       return;
@@ -515,12 +530,20 @@ export default function Home() {
       category,
     });
 
-    // Auto-advance after 2 seconds
-    setTimeout(() => {
-      setShowResult(false);
-      setComparison(null);
-      showNextPair();
-    }, 2000);
+    // If correct, increment score and auto-advance after 2 seconds
+    // If incorrect, show game over screen after 2 seconds
+    if (correct) {
+      setScore(prevScore => prevScore + 1);
+      setTimeout(() => {
+        setShowResult(false);
+        setComparison(null);
+        showNextPair();
+      }, 2000);
+    } else {
+      setTimeout(() => {
+        setGameOver(true);
+      }, 2000);
+    }
   };
 
   return (
@@ -541,7 +564,33 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col items-center px-4 py-5">
+      <main className="flex-1 flex flex-col items-center px-4 py-5 relative">
+        {/* Game Over Screen Overlay */}
+        {gameOver && (
+          <div className="absolute inset-0 bg-[#fdfcfc] flex items-center justify-center z-50">
+            <div className="bg-white border-4 border-[#8c1d0a] rounded-lg shadow-2xl p-8 md:p-12 max-w-md mx-4 text-center">
+              <h2 className="text-3xl md:text-4xl font-bold text-[#8c1d0a] mb-4">
+                Game Over!
+              </h2>
+              <p className="text-md text-gray-600 mb-2">
+                {score === 0 ? "Better luck next time!" : score === 1 ? "Not bad for a first try!" : score < 5 ? "Keep practicing!" : score < 10 ? "Pretty good!" : "Amazing streak!"}
+              </p>
+              <p className="text-4xl md:text-5xl font-bold text-black my-6">
+                Score: {score}
+              </p>
+              <p className="text-lg md:text-xl text-gray-700 mb-6">
+                Desafía y compártelo a tus amigos!
+              </p>
+              <button
+                onClick={handleReset}
+                className="bg-[#8c1d0a] text-white px-8 py-3 rounded-lg text-lg font-bold hover:bg-[#6d1508] transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Tagline */}
         <div className="text-center mb-8">
           <p className="text-lg md:text-2xl font-bold text-black mb-12">
@@ -550,8 +599,14 @@ export default function Home() {
             <span className="md:ml-2">Will we be judged on them? Yes.</span>
           </p>
           <p className="text-xl md:text-4xl font-bold text-black mt-4">
-            Who&apos;s the CTO? Click to Choose.
+            Who&apos;s the CTO? CLICK to choose.
           </p>
+          {/* Score Display */}
+          <div className="mt-6">
+            <p className="text-lg md:text-2xl font-bold text-[#8c1d0a]">
+              Current Streak: {score}
+            </p>
+          </div>
         </div>
 
         {/* Image Comparison Section */}
