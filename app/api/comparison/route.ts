@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllPeople, getPeopleByLocation, updatePersonStatsFromTemp } from "@/lib/cosmosdb";
+import { getAllPeople, updatePersonStatsFromTemp } from "@/lib/cosmosdb";
 import { ComparisonPair, Person } from "@/lib/types";
 import { FIRST_COMPARISON } from "@/lib/firstVisit";
 
@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(firstVisit);
     }
 
-    let people: Person[] = await getAllPeople();
+    const people: Person[] = await getAllPeople();
     if (people.length === 0) {
       throw new Error("SOMEHOW AGAIN BY ALL PEOPLE: No people found for comparison");
     }
