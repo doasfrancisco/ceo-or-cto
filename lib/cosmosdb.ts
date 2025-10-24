@@ -31,6 +31,7 @@ export async function getAllPeople(retries = 5, delay = 1000): Promise<Person[]>
         .fetchAll();
       
       if (people.length > 0) return people as Person[];
+      console.warn(`Attempt ${attempt} - Empty people list, retrying in ${delay}ms...`);
       await new Promise(r => setTimeout(r, delay));
     }
   } catch (error) {
