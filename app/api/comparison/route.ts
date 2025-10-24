@@ -150,6 +150,9 @@ export async function GET(request: NextRequest) {
 
     
     const matchups = getMatchupsByPercentile(people);
+    if (matchups.length < 2) {
+      throw new Error("MATCHUP LENGTH: Not enough people for comparison");
+    }
     logInvalidMatchups(matchups);
     for (let i = 0; i < matchups.length; i += 2) {
       if (i + 1 < matchups.length && Math.random() < 0.5) {
