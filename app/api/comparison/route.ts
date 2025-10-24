@@ -134,20 +134,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(firstVisit);
     }
 
-    let people: Person[];
-    if (location && location !== "random") {
-      people = await getPeopleByLocation(location);
-      if (people.length === 0) {
-        throw new Error("SOMEHOW BY LOCATION: No people found for comparison");
-      }
-    } else {
-      people = await getAllPeople();
-      if (people.length === 0) {
-        throw new Error("SOMEHOW BY ALL PEOPLE: No people found for comparison");
-      }
+    let people: Person[] = await getAllPeople();
+    if (people.length === 0) {
+      throw new Error("SOMEHOW AGAIN BY ALL PEOPLE: No people found for comparison");
     }
-
-
     
     const matchups = getMatchupsByPercentile(people);
     if (matchups.length < 2) {
