@@ -141,6 +141,8 @@ export async function GET(request: NextRequest) {
       people = await getAllPeople();
     }
 
+    console.warn("People fetched:", people)
+
     const matchups = getMatchupsByPercentile(people);
     logInvalidMatchups(matchups);
     for (let i = 0; i < matchups.length; i += 2) {
@@ -153,6 +155,7 @@ export async function GET(request: NextRequest) {
 
     const [person1, person2] = matchups;
     if (!person1 || !person2) {
+      console.error("Invalid comparison pair", { person1, person2, matchups });
       throw new Error("Failed to assemble a comparison pair");
     }
 
