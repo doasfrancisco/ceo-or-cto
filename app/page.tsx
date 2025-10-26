@@ -178,12 +178,16 @@ export default function Home() {
       prefetchAbortControllerRef.current.abort();
     }
 
+    const nextVariant: ComparisonVariant = hasSeenSponsoredComparisons()
+      ? "default"
+      : "sponsored";
+
     const controller = new AbortController();
     prefetchAbortControllerRef.current = controller;
     prefetchInFlightRef.current = true;
 
     const promise = fetch(
-      `/api/comparison?firstVisit=false&variant=default&location=${cat}`,
+      `/api/comparison?firstVisit=false&variant=${nextVariant}&location=${cat}`,
       {
         cache: "no-store",
         signal: controller.signal,
@@ -193,7 +197,7 @@ export default function Home() {
         const data: ComparisonPair = await response.json();
 
         if (!controller.signal.aborted) {
-          const responseVariant: ComparisonVariant = data.variant ?? "default";
+          const responseVariant: ComparisonVariant = data.variant ?? nextVariant;
           const normalizedData: ComparisonPair = {
             ...data,
             isFirstVisit: responseVariant === "firstVisit",
@@ -224,7 +228,12 @@ export default function Home() {
 
     prefetchPromiseRef.current = promise;
     return promise;
-  }, [category, preloadPersonImages, writeComparisonToCache]);
+  }, [
+    category,
+    hasSeenSponsoredComparisons,
+    preloadPersonImages,
+    writeComparisonToCache,
+  ]);
 
   const maybePrefetchNextBatch = useCallback((cat: string = category) => {
     if (!matchupsRef.current || prefetchedComparisonRef.current || prefetchInFlightRef.current) {
@@ -350,20 +359,23 @@ export default function Home() {
     }
 
     try {
-      const shouldRequestFirstVisit = variant === "firstVisit" && !servedFromCache;
-      const shouldRequestSponsored = variant === "sponsored" && !servedFromCache;
-      const requestVariant: ComparisonVariant = shouldRequestFirstVisit
-        ? "firstVisit"
-        : shouldRequestSponsored
-          ? "sponsored"
-          : "default";
+      let requestVariant: ComparisonVariant;
+      if (!servedFromCache) {
+        requestVariant = variant;
+      } else if (variant === "firstVisit") {
+        requestVariant = sponsoredPending ? "sponsored" : "default";
+      } else if (variant === "sponsored") {
+        requestVariant = "default";
+      } else {
+        requestVariant = "default";
+      }
 
       const params = new URLSearchParams({
         location: cat,
         variant: requestVariant,
       });
 
-      if (shouldRequestFirstVisit) {
+      if (requestVariant === "firstVisit") {
         params.set("firstVisit", "true");
       }
 
@@ -491,8 +503,11 @@ export default function Home() {
   };
 
   const showNextPair = () => {
-    if (!matchupsRef.current || currentPairIndexRef.current >= 5) {
-      // Need to update stats and fetch new matchups
+    const totalPairs = matchupsRef.current
+      ? Math.floor(matchupsRef.current.length / 2)
+      : 0;
+
+    if (!matchupsRef.current || totalPairs === 0 || currentPairIndexRef.current >= totalPairs) {
       updateStatsAndFetchNew();
       return;
     }
@@ -638,9 +653,7 @@ export default function Home() {
 
   const isSponsoredComparison = Boolean(
     comparison &&
-    (comparison.variant === "sponsored" ||
-      comparison.person1.sponsored ||
-      comparison.person2.sponsored)
+    (comparison.variant === "sponsored")
   );
 
   const renderSponsorText = (className: string) => {
