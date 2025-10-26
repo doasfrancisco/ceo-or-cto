@@ -55,6 +55,7 @@ export const analytics = {
     otherPersonName: string;
     otherPersonRole: string;
     category: string;
+    variant: string;
   }) => {
     if (!MIXPANEL_TOKEN) return;
     mixpanel.track('Person Selected', {
@@ -65,6 +66,7 @@ export const analytics = {
       other_person_name: data.otherPersonName,
       other_person_role: data.otherPersonRole,
       category: data.category,
+      variant: data.variant
     });
   },
 
@@ -77,6 +79,7 @@ export const analytics = {
     person2Role: string;
     category: string;
     isFirstVisit: boolean;
+    variant: string;
   }) => {
     if (!MIXPANEL_TOKEN) return;
     mixpanel.track('Comparison Viewed', {
@@ -88,6 +91,7 @@ export const analytics = {
       person2_role: data.person2Role,
       category: data.category,
       is_first_visit: data.isFirstVisit,
+      variant: data.variant,
     });
   },
 

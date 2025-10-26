@@ -41,6 +41,25 @@ export async function getAllPeople(retries = 5, delay = 1000): Promise<Person[]>
   throw new Error("Empty people list after retries");
 }
 
+export async function getSponsoredPeople(): Promise<Person[]> {
+  try {
+    const cosmosClient = getClient();
+    const database = cosmosClient.database(databaseId);
+    const container = database.container(containerId);
+
+    const { resources: people } = await container.items
+      .query({
+        query: "SELECT * FROM c WHERE c.sponsored = true ORDER BY c.sponsorName",
+      })
+      .fetchAll();
+
+    return people as Person[];
+  } catch (error) {
+    console.error("Error fetching sponsored people from CosmosDB:", error);
+    throw error;
+  }
+}
+
 export async function getPeopleByLocation(location: string): Promise<Person[]> {
   try {
     const cosmosClient = getClient();

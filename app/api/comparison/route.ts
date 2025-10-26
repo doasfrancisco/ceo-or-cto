@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllPeople, updatePersonStatsFromTemp } from "@/lib/cosmosdb";
-import { ComparisonPair, Person } from "@/lib/types";
+import { getAllPeople, getSponsoredPeople, updatePersonStatsFromTemp } from "@/lib/cosmosdb";
+import { ComparisonPair, Person, ComparisonVariant } from "@/lib/types";
 import { FIRST_COMPARISON } from "@/lib/firstVisit";
 
 function applyEasterImage(person: Person): Person {
@@ -95,12 +95,53 @@ function getMatchupsByPercentile(people: Person[]): Person[] {
   return matchups;
 }
 
+function buildSponsoredMatchups(people: Person[]): Person[] {
+  const groups = new Map<string, { ceos: Person[]; ctos: Person[] }>();
+
+  people
+    .filter(person => person?.sponsored)
+    .forEach(person => {
+      const prepared = applyEasterImage(person);
+      const sponsorKey = prepared.sponsorName!.toLowerCase();
+      const group = groups.get(sponsorKey) ?? { ceos: [], ctos: [] };
+
+      if (prepared.type === "forced_to_socialize") {
+        group.ceos.push(prepared);
+      } else {
+        group.ctos.push(prepared);
+      }
+
+      groups.set(sponsorKey, group);
+    });
+
+  const orderedGroups = Array.from(groups.values());
+  const matchups: Person[] = [];
+
+  for (const group of orderedGroups) {
+    const pairs = Math.min(group.ceos.length, group.ctos.length);
+    for (let i = 0; i < pairs; i++) {
+      let ceo = group.ceos[i];
+      let cto = group.ctos[i];
+
+      if (Math.random() < 0.5) {
+        [ceo, cto] = [cto, ceo];
+      }
+
+      matchups.push(ceo, cto);
+    }
+  }
+
+  return matchups;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const isFirstVisit = searchParams.get("firstVisit") === "true";
+    const requestedVariant: ComparisonVariant = searchParams.get("variant") as ComparisonVariant;
+    const isSponsoredRequested = requestedVariant === "sponsored";
+    
     let location = searchParams.get("location") || "random";
-
     if (location === "random") {
       const country = request.headers.get("x-vercel-ip-country") ||
                      request.headers.get("cf-ipcountry");
@@ -122,9 +163,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (isFirstVisit) {
-      const firstVisit = { ...FIRST_COMPARISON };
+      const firstVisit: ComparisonPair = {
+        ...FIRST_COMPARISON,
+        isFirstVisit: true,
+        variant: "firstVisit",
+      };
       if (Math.random() < 0.5) {
-        const swapped = {
+        const swapped: ComparisonPair = {
           ...firstVisit,
           person1: firstVisit.person2,
           person2: firstVisit.person1,
@@ -132,6 +177,26 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(swapped);
       }
       return NextResponse.json(firstVisit);
+    }
+
+    if (isSponsoredRequested) {
+      const sponsoredPeople = await getSponsoredPeople();
+      const sponsoredMatchups = buildSponsoredMatchups(sponsoredPeople);
+
+      if (sponsoredMatchups.length >= 2) {
+        logInvalidMatchups(sponsoredMatchups);
+        const [person1, person2] = sponsoredMatchups;
+        const payload: ComparisonPair = {
+          person1,
+          person2,
+          isFirstVisit: false,
+          matchups: sponsoredMatchups,
+          variant: "sponsored",
+        };
+        return NextResponse.json(payload);
+      }
+
+      console.warn("Sponsored comparison requested but insufficient sponsored people, falling back to default workflow");
     }
 
     const people: Person[] = await getAllPeople();
@@ -163,6 +228,7 @@ export async function GET(request: NextRequest) {
       person2,
       isFirstVisit,
       matchups,
+      variant: "default",
     } satisfies ComparisonPair);
   } catch (error) {
     console.error("Error in comparison API:", error);

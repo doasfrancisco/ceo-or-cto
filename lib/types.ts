@@ -7,6 +7,9 @@ export interface Person {
   imageUrl: string;
   location: string;
   easterImageUrl?: string;
+  sponsored?: boolean;
+  sponsorName?: string;
+  sponsorUrl?: string;
   total: number;
   sr: number;
   total_temp?: number;
@@ -14,9 +17,12 @@ export interface Person {
   linkedInUrl: string;
 }
 
+export type ComparisonVariant = "default" | "firstVisit" | "sponsored";
+
 export interface ComparisonPair {
   person1: Person;
   person2: Person;
   isFirstVisit: boolean;
   matchups?: Person[]; // Array de 10 personas (5 matcheos por percentil)
+  variant?: ComparisonVariant;
 }

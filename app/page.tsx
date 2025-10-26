@@ -3,15 +3,17 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ComparisonPair, Person } from "@/lib/types";
+import { ComparisonPair, Person, ComparisonVariant } from "@/lib/types";
 import { analytics } from "@/lib/mixpanel";
 import { FIRST_COMPARISON } from "@/lib/firstVisit";
 
-const CACHE_VERSION = "v1";
-const getCacheKey = (cat: string) => `comparisonCache:${CACHE_VERSION}:${cat}`;
+const CACHE_VERSION = "v2";
+const SPONSORED_FLAG_KEY = "hasSeenSponsoredComparisons";
+const getCacheKey = (cat: string, variant: ComparisonVariant) => `comparisonCache:${CACHE_VERSION}:${variant}:${cat}`;
 
 type CachedComparisonPayload = {
   timestamp: number;
+  variant: ComparisonVariant;
   data: ComparisonPair;
 };
 
@@ -48,31 +50,42 @@ export default function Home() {
     }
   }, []);
 
-  const readComparisonFromCache = useCallback((cat: string): ComparisonPair | null => {
+  const readComparisonFromCache = useCallback((cat: string, variant: ComparisonVariant): ComparisonPair | null => {
     if (typeof window === "undefined") return null;
     try {
-      const raw = localStorage.getItem(getCacheKey(cat));
+      const raw = localStorage.getItem(getCacheKey(cat, variant));
       if (!raw) return null;
       const parsed = JSON.parse(raw) as CachedComparisonPayload;
+      if (parsed?.variant && parsed.variant !== variant) {
+        return null;
+      }
       if (!parsed?.data?.person1 || !parsed?.data?.person2) {
         return null;
       }
-      return parsed.data;
+      return {
+        ...parsed.data,
+        variant: parsed.variant ?? variant,
+      };
     } catch (error) {
       console.warn("Failed to read cached comparison:", error);
-      localStorage.removeItem(getCacheKey(cat));
+      localStorage.removeItem(getCacheKey(cat, variant));
       return null;
     }
   }, []);
 
-  const writeComparisonToCache = useCallback((cat: string, data: ComparisonPair) => {
+  const writeComparisonToCache = useCallback((cat: string, data: ComparisonPair, variant: ComparisonVariant) => {
     if (typeof window === "undefined") return;
     try {
+      const normalizedData: ComparisonPair = {
+        ...data,
+        variant,
+      };
       const payload: CachedComparisonPayload = {
         timestamp: Date.now(),
-        data,
+        data: normalizedData,
+        variant,
       };
-      localStorage.setItem(getCacheKey(cat), JSON.stringify(payload));
+      localStorage.setItem(getCacheKey(cat, variant), JSON.stringify(payload));
     } catch (error) {
       console.warn("Failed to cache comparison data:", error);
     }
@@ -82,6 +95,16 @@ export default function Home() {
     if (typeof window === "undefined") return;
     localStorage.setItem("hasVisited", "true");
     analytics.trackFirstVisit();
+  }, []);
+
+  const markSponsoredVisitComplete = useCallback(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(SPONSORED_FLAG_KEY, "true");
+  }, []);
+
+  const hasSeenSponsoredComparisons = useCallback(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem(SPONSORED_FLAG_KEY) === "true";
   }, []);
 
   const createLinkedInShareUrl = useCallback((person: Person) => {
@@ -137,6 +160,7 @@ export default function Home() {
 
   const preloadPersonImages = useCallback((people: Person[]) => {
     if (!people || people.length === 0) return;
+
     people.forEach(person => {
       if (!person || !person.imageUrl) {
         reportMissingImage(person);
@@ -145,7 +169,7 @@ export default function Home() {
       preloadImage(person.imageUrl);
       preloadImage(person.easterImageUrl ?? null);
     });
-  }, []);
+  }, [reportMissingImage]);
 
   const prefetchNextBatch = useCallback((cat: string = category) => {
     if (prefetchInFlightRef.current || prefetchedComparisonRef.current) return;
@@ -159,7 +183,7 @@ export default function Home() {
     prefetchInFlightRef.current = true;
 
     const promise = fetch(
-      `/api/comparison?firstVisit=false&location=${cat}`,
+      `/api/comparison?firstVisit=false&variant=default&location=${cat}`,
       {
         cache: "no-store",
         signal: controller.signal,
@@ -169,13 +193,15 @@ export default function Home() {
         const data: ComparisonPair = await response.json();
 
         if (!controller.signal.aborted) {
+          const responseVariant: ComparisonVariant = data.variant ?? "default";
           const normalizedData: ComparisonPair = {
             ...data,
-            isFirstVisit: false,
+            isFirstVisit: responseVariant === "firstVisit",
+            variant: responseVariant,
           };
 
           prefetchedComparisonRef.current = normalizedData;
-          writeComparisonToCache(cat, normalizedData);
+          writeComparisonToCache(cat, normalizedData, responseVariant);
 
           if (normalizedData.matchups) {
             preloadPersonImages(normalizedData.matchups);
@@ -217,8 +243,12 @@ export default function Home() {
   const applyComparison = useCallback((
     data: ComparisonPair,
     cat: string,
-    options: { firstVisit: boolean }
+    options: { firstVisit: boolean; variant: ComparisonVariant }
   ) => {
+    if (options.variant === "sponsored") {
+      markSponsoredVisitComplete();
+    }
+
     if (data.matchups) {
       matchupsRef.current = data.matchups;
       currentPairIndexRef.current = 1;
@@ -232,6 +262,7 @@ export default function Home() {
     setComparison({
       ...data,
       isFirstVisit: options.firstVisit,
+      variant: options.variant,
     });
 
     analytics.trackComparisonView({
@@ -243,10 +274,11 @@ export default function Home() {
       person2Role: data.person2.role || "",
       category: cat,
       isFirstVisit: options.firstVisit,
+      variant: options.variant,
     });
 
     maybePrefetchNextBatch(cat);
-  }, [maybePrefetchNextBatch, preloadPersonImages]);
+  }, [markSponsoredVisitComplete, maybePrefetchNextBatch, preloadPersonImages]);
 
   const isFirstVisit = useCallback(() => {
     if (typeof window === "undefined") return true;
@@ -271,15 +303,25 @@ export default function Home() {
     abortControllerRef.current = abortController;
 
     const firstVisit = isFirstVisit();
+    const sponsoredPending = !hasSeenSponsoredComparisons();
+    const variant: ComparisonVariant = firstVisit
+      ? "firstVisit"
+      : sponsoredPending
+        ? "sponsored"
+        : "default";
     let servedFromCache = false;
 
-    let cachedComparison = readComparisonFromCache(cat);
-    if (firstVisit && cachedComparison && cachedComparison.isFirstVisit !== true) {
+    let cachedComparison = readComparisonFromCache(cat, variant);
+    if (variant === "firstVisit" && cachedComparison && cachedComparison.isFirstVisit !== true) {
       // Ignore stale cache entries from previous sessions when forcing the intro matchup.
       cachedComparison = null;
     }
-    if (!cachedComparison && firstVisit) {
-      const baseFirstVisit = { ...FIRST_COMPARISON };
+    if (!cachedComparison && variant === "firstVisit") {
+      const baseFirstVisit: ComparisonPair = {
+        ...FIRST_COMPARISON,
+        isFirstVisit: true,
+        variant,
+      };
       const randomizedFirstVisit =
         Math.random() < 0.5
           ? {
@@ -289,14 +331,18 @@ export default function Home() {
             }
           : baseFirstVisit;
       cachedComparison = randomizedFirstVisit;
-      writeComparisonToCache(cat, randomizedFirstVisit);
+      writeComparisonToCache(cat, randomizedFirstVisit, variant);
     }
 
     if (cachedComparison) {
       servedFromCache = true;
+      const cachedVariant = cachedComparison.variant ?? variant;
       setLoading(false);
-      applyComparison(cachedComparison, cat, { firstVisit: cachedComparison.isFirstVisit });
-      if (firstVisit) {
+      applyComparison(cachedComparison, cat, {
+        firstVisit: cachedVariant === "firstVisit",
+        variant: cachedVariant,
+      });
+      if (cachedVariant === "firstVisit") {
         markFirstVisitComplete();
       }
     } else {
@@ -304,9 +350,25 @@ export default function Home() {
     }
 
     try {
-      const shouldRequestFirstVisit = firstVisit && !servedFromCache;
+      const shouldRequestFirstVisit = variant === "firstVisit" && !servedFromCache;
+      const shouldRequestSponsored = variant === "sponsored" && !servedFromCache;
+      const requestVariant: ComparisonVariant = shouldRequestFirstVisit
+        ? "firstVisit"
+        : shouldRequestSponsored
+          ? "sponsored"
+          : "default";
+
+      const params = new URLSearchParams({
+        location: cat,
+        variant: requestVariant,
+      });
+
+      if (shouldRequestFirstVisit) {
+        params.set("firstVisit", "true");
+      }
+
       const response = await fetch(
-        `/api/comparison?firstVisit=${shouldRequestFirstVisit}&location=${cat}`,
+        `/api/comparison?${params.toString()}`,
         {
           cache: "no-store",
           signal: abortController.signal,
@@ -318,18 +380,30 @@ export default function Home() {
         return;
       }
 
+      const responseVariant: ComparisonVariant =
+        data.variant ?? requestVariant;
+
       const normalizedData: ComparisonPair = {
         ...data,
-        isFirstVisit: false,
+        isFirstVisit: responseVariant === "firstVisit",
+        variant: responseVariant,
       };
 
-      writeComparisonToCache(cat, normalizedData);
+      writeComparisonToCache(cat, normalizedData, responseVariant);
 
       if (!servedFromCache) {
-        if (shouldRequestFirstVisit) {
+        if (responseVariant === "firstVisit") {
           markFirstVisitComplete();
+        } else if (responseVariant === "sponsored") {
+          markSponsoredVisitComplete();
+        } else if (variant === "sponsored") {
+          markSponsoredVisitComplete();
         }
-        applyComparison(normalizedData, cat, { firstVisit: shouldRequestFirstVisit });
+
+        applyComparison(normalizedData, cat, {
+          firstVisit: responseVariant === "firstVisit",
+          variant: responseVariant,
+        });
         setLoading(false);
       } else {
         prefetchedComparisonRef.current = normalizedData;
@@ -350,8 +424,10 @@ export default function Home() {
   }, [
     applyComparison,
     category,
+    hasSeenSponsoredComparisons,
     isFirstVisit,
     markFirstVisitComplete,
+    markSponsoredVisitComplete,
     preloadPersonImages,
     readComparisonFromCache,
     writeComparisonToCache,
@@ -383,7 +459,11 @@ export default function Home() {
       prefetchedComparisonRef.current = null;
       prefetchPromiseRef.current = null;
       setLoading(false);
-      applyComparison(prefetched, category, { firstVisit: false });
+      const prefetchedVariant = prefetched.variant ?? "default";
+      applyComparison(prefetched, category, {
+        firstVisit: prefetchedVariant === "firstVisit",
+        variant: prefetchedVariant,
+      });
       return true;
     };
 
@@ -432,12 +512,15 @@ export default function Home() {
     // Increment for next time
     currentPairIndexRef.current += 1;
 
+    const currentVariant = comparison?.variant ?? "default";
+
     // Create comparison object
     const newComparison: ComparisonPair = {
       person1,
       person2,
       isFirstVisit: false,
       matchups: matchupsRef.current,
+      variant: currentVariant,
     };
 
     setComparison(newComparison);
@@ -452,6 +535,7 @@ export default function Home() {
       person2Role: person2.role || '',
       category,
       isFirstVisit: false,
+      variant: currentVariant,
     });
 
     maybePrefetchNextBatch(category);
@@ -492,7 +576,7 @@ export default function Home() {
     const selected = comparison.person1.id === personId ? comparison.person1 : comparison.person2;
     const other = comparison.person1.id === personId ? comparison.person2 : comparison.person1;
 
-    const correct = selected.role === 'CTO';
+    const correct = selected.type === 'probably_uses_glasses';
     setIsCorrect(correct);
     setSelectedPerson(selected);
     setOtherPerson(other);
@@ -528,6 +612,7 @@ export default function Home() {
       otherPersonName: other.name,
       otherPersonRole: other.role || '',
       category,
+      variant: comparison.variant ?? "default",
     });
 
     // If correct, increment score and auto-advance after 2 seconds
@@ -544,6 +629,42 @@ export default function Home() {
         setGameOver(true);
       }, 2000);
     }
+  };
+
+  const sponsorName =
+    comparison?.person1.sponsorName ?? comparison?.person2.sponsorName ?? null;
+  const sponsorUrl =
+    comparison?.person1.sponsorUrl ?? comparison?.person2.sponsorUrl ?? null;
+
+  const isSponsoredComparison = Boolean(
+    comparison &&
+    (comparison.variant === "sponsored" ||
+      comparison.person1.sponsored ||
+      comparison.person2.sponsored)
+  );
+
+  const renderSponsorText = (className: string) => {
+    if (sponsorUrl) {
+      const baseClasses = className
+        ? `${className} hover:underline`
+        : "hover:underline";
+      return (
+        <a
+          href={sponsorUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={baseClasses}
+        >
+          Sponsored by {sponsorName}
+        </a>
+      );
+    }
+
+    return (
+      <span className={className}>
+        Sponsored by {sponsorName}
+      </span>
+    );
   };
 
   return (
@@ -603,15 +724,32 @@ export default function Home() {
           </p>
           {/* Score Display */}
           <div className="mt-6">
-            <p className="text-lg md:text-2xl font-bold text-[#8c1d0a]">
-              Current Streak: {score}
-            </p>
+            {isSponsoredComparison ? (
+              <>
+                {renderSponsorText("md:hidden text-lg font-bold text-[#8c1d0a]")}
+                <p className="hidden md:block text-lg md:text-2xl font-bold text-[#8c1d0a]">
+                  Current Streak: {score}
+                </p>
+              </>
+            ) : (
+              <p className="text-lg md:text-2xl font-bold text-[#8c1d0a]">
+                Current Streak: {score}
+              </p>
+            )}
           </div>
         </div>
 
         {/* Image Comparison Section */}
-        <div className="flex flex-col items-center gap-4 mb-12">
-          <div className="flex items-center gap-3 md:gap-4">
+        <div className="relative flex flex-col items-center gap-4 mb-12">
+          {isSponsoredComparison && (
+            <div className="hidden md:block absolute top-1/4 -left-6 -translate-x-full">
+              <div className="px-4 py-3 max-w-xs text-center">
+                {renderSponsorText("text-lg font-semibold text-[#8c1d0a]")}
+              </div>
+            </div>
+          )}
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center gap-3 md:gap-4">
             {loading || !comparison ? (
               <>
                 {/* Loading placeholders */}
@@ -673,48 +811,49 @@ export default function Home() {
                 </button>
               </>
             )}
-          </div>
+            </div>
 
-          {/* Result Display */}
-          <div className="w-full mt-4 min-h-[60px] md:min-h-[90px] flex flex-col items-center justify-center">
-            {showResult && selectedPerson && otherPerson && comparison && (
-              <div className="text-center">
-                <p className={`text-2xl font-bold mb-2 ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-                  {isCorrect ? 'Correct!' : 'Wrong'}
-                </p>
-                <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center justify-items-center gap-4 md:gap-6 text-sm md:text-base w-full max-w-2xl mx-auto px-2">
-                  <div className="flex flex-col items-end gap-1 text-right">
-                    <span className="font-medium whitespace-normal break-words leading-tight">
-                      {comparison.person1.name} ({comparison.person1.role})
-                    </span>
-                    <a
-                      href={createLinkedInShareUrl(comparison.person1)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline whitespace-normal break-words leading-tight"
-                      title={`Share ${comparison.person1.name} on LinkedIn`}
-                    >
-                      LinkedIn (Click to tag)
-                    </a>
-                  </div>
-                  <span className="w-10 text-center font-semibold">vs</span>
-                  <div className="flex flex-col items-start gap-1 text-left">
-                    <span className="font-medium whitespace-normal break-words leading-tight">
-                      {comparison.person2.name} ({comparison.person2.role})
-                    </span>
-                    <a
-                      href={createLinkedInShareUrl(comparison.person2)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline whitespace-normal break-words leading-tight"
-                      title={`Share ${comparison.person2.name} on LinkedIn`}
-                    >
-                      LinkedIn (Click to tag)
-                    </a>
+            {/* Result Display */}
+            <div className="w-full mt-4 min-h-[60px] md:min-h-[90px] flex flex-col items-center justify-center">
+              {showResult && selectedPerson && otherPerson && comparison && (
+                <div className="text-center">
+                  <p className={`text-2xl font-bold mb-2 ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                    {isCorrect ? 'Correct!' : 'Wrong'}
+                  </p>
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center justify-items-center gap-4 md:gap-6 text-sm md:text-base w-full max-w-2xl mx-auto px-2">
+                    <div className="flex flex-col items-end gap-1 text-right">
+                      <span className="font-medium whitespace-normal break-words leading-tight">
+                        {comparison.person1.name} ({comparison.person1.role})
+                      </span>
+                      <a
+                        href={createLinkedInShareUrl(comparison.person1)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline whitespace-normal break-words leading-tight"
+                        title={`Share ${comparison.person1.name} on LinkedIn`}
+                      >
+                        LinkedIn (Click to tag)
+                      </a>
+                    </div>
+                    <span className="w-10 text-center font-semibold">vs</span>
+                    <div className="flex flex-col items-start gap-1 text-left">
+                      <span className="font-medium whitespace-normal break-words leading-tight">
+                        {comparison.person2.name} ({comparison.person2.role})
+                      </span>
+                      <a
+                        href={createLinkedInShareUrl(comparison.person2)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline whitespace-normal break-words leading-tight"
+                        title={`Share ${comparison.person2.name} on LinkedIn`}
+                      >
+                        LinkedIn (Click to tag)
+                      </a>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
